@@ -33,7 +33,7 @@ public class MainPage extends JFrame {
 
         this.setContentPane(kPanel);
         Color startColor = new Color(10,102,102);
-        Color endColor = new Color(155,132,204);
+        Color endColor = new Color(175, 193,204);
         kPanel.kStartColor = startColor;
         kPanel.kEndColor = endColor;
         kPanel.kGradientFocus = 200;
@@ -131,10 +131,12 @@ public class MainPage extends JFrame {
         kPanel.add(kButton, c);
 
         res = new JLabel("");
-        res.setFont(new Font("SansSerif", Font.PLAIN, 16));
-        res.setForeground(new Color(120, 64, 64));
+        res.setFont(new Font("SansSerif", Font.BOLD, 16));
+        res.setForeground(new Color(160, 36, 37, 208));
         c.gridy = 5;
         c.gridx = 1;
+        c.gridwidth = 2;
+        c.fill = GridBagConstraints.CENTER;
         c.insets = new Insets(0,0,0,20);
         kPanel.add(res,c);
         setVisible(true);
