@@ -1,11 +1,15 @@
-import keeptoo.Drag;
+import io.github.bonigarcia.wdm.WebDriverManager;
 import keeptoo.KButton;
 import keeptoo.KGradientPanel;
+import org.openqa.selenium.By;
+import org.openqa.selenium.Keys;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.io.File;
 import java.net.URL;
 
 public class MainPage extends JFrame {
@@ -20,6 +24,8 @@ public class MainPage extends JFrame {
     private JComboBox testTypes;
     private JLabel projectName;
     private String[] typesList =  {"Check for broken links","Validate the UI", "Check for XSS attack"};
+
+    private static WebDriver driver;
 
     public MainPage(){
         setTitle("Testing Project");
@@ -141,26 +147,24 @@ public class MainPage extends JFrame {
         kPanel.add(res,c);
         setVisible(true);
 
-        kButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (e.getSource() == kButton) {
-                    if (!tfURL.getText().isEmpty()) {
-                        String url = tfURL.getText();
-                        if(isValidURL(url)){
-                            String data
-                                    = "URL : "
-                                    + tfURL.getText() + "\n"
-                                    + "Testing Type : "
-                                    + testTypes.getSelectedItem() + "\n";
-                            res.setText(data);
-                        } else {
-                            res.setText("Please provide valid URL");
-                        }
+        kButton.addActionListener(e -> {
+            if (e.getSource() == kButton) {
+                if (!tfURL.getText().isEmpty()) {
+                    final String url = tfURL.getText();
+                    if(isValidURL(url)){
+                        final String data
+                                = "URL : "
+                                + tfURL.getText() + "\n"
+                                + "Testing Type : "
+                                + testTypes.getSelectedItem() + "\n";
+                        startRecording(url);
+                        //res.setText(data);
+                    } else {
+                        res.setText("Please provide valid URL");
                     }
-                    else {
-                        res.setText("Please provide the URL");
-                    }
+                }
+                else {
+                    res.setText("Please provide the URL");
                 }
             }
         });
@@ -175,6 +179,28 @@ public class MainPage extends JFrame {
         catch (Exception e) {
             return false;
         }
+    }
+
+    @lombok.SneakyThrows
+    public static void startRecording(String url){
+
+        ChromeOptions chromeOptions = new ChromeOptions();
+        chromeOptions.addExtensions (new File("src/main/resources/extension_3_17_0_0.crx"));
+        WebDriverManager.chromedriver().setup();
+        driver = new ChromeDriver(chromeOptions);
+        driver.get("chrome-extension://mooikfkahbdckldjjndioackbalphokd/index.html");
+        driver.findElement(By.linkText("Record a new test in a new project")).click();
+        driver.findElement(By.cssSelector("input[name=\"projectName\"]")).sendKeys("Test" + Keys.ENTER);
+        Thread.sleep(5000);
+        driver.findElement(By.cssSelector("input[name=\"baseUrl\"]")).sendKeys(url + Keys.ENTER);
+    }
+
+    public static void stopAndSaveRecording(){
+
+    }
+
+    public static void playbackRecording() {
+
     }
 
 
