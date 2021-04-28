@@ -4,13 +4,19 @@ import keeptoo.KGradientPanel;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
+import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Iterator;
+import java.util.List;
+
 
 public class MainPage extends JFrame {
 
@@ -23,15 +29,16 @@ public class MainPage extends JFrame {
     private JLabel res;
     private JComboBox testTypes;
     private JLabel projectName;
-    private String[] typesList =  {"Check for broken links","Validate the UI", "Check for XSS attack"};
+    private String[] typesList =  {"Check for broken links","Functional Test by recording", "Validate the UI", "Check for XSS attack"};
 
     private static WebDriver driver;
 
     public MainPage(){
         setTitle("Testing Project");
-        setBounds(300, 90, 900, 600);
+        setBounds(20, 20, 1200, 700);
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setResizable(false);
+        setResizable(true);
 
         kPanel = new KGradientPanel();
         kPanel.setLayout(new GridBagLayout());
@@ -152,12 +159,11 @@ public class MainPage extends JFrame {
                 if (!tfURL.getText().isEmpty()) {
                     final String url = tfURL.getText();
                     if(isValidURL(url)){
-                        final String data
-                                = "URL : "
-                                + tfURL.getText() + "\n"
-                                + "Testing Type : "
-                                + testTypes.getSelectedItem() + "\n";
-                        startRecording(url);
+                        String type = testTypes.getSelectedItem().toString();
+                        switch (type){
+                            case "Check for broken links": checkForBrokenLinks(url); break;
+                            case "Functional Test by recording": startRecording(url); break;
+                        }
                         //res.setText(data);
                     } else {
                         res.setText("Please provide valid URL");
@@ -193,6 +199,74 @@ public class MainPage extends JFrame {
         driver.findElement(By.cssSelector("input[name=\"projectName\"]")).sendKeys("Test" + Keys.ENTER);
         Thread.sleep(5000);
         driver.findElement(By.cssSelector("input[name=\"baseUrl\"]")).sendKeys(url + Keys.ENTER);
+    }
+
+    public void checkForBrokenLinks(String url){
+        String homePage = url;
+        String nestedUrl = "";
+        HttpURLConnection huc = null;
+        int respCode = 200;
+
+        WebDriverManager.chromedriver().setup();
+        driver = new ChromeDriver();
+
+        driver.manage().window().maximize();
+
+        driver.get(homePage);
+
+        List<WebElement> links = driver.findElements(By.tagName("a"));
+
+        Iterator<WebElement> it = links.iterator();
+
+        while(it.hasNext()){
+
+            nestedUrl = it.next().getAttribute("href");
+            if(nestedUrl == null || nestedUrl.isEmpty()){
+                System.out.println("URL is either not configured for anchor tag or it is empty");
+                continue;
+            }
+
+            try {
+                huc = (HttpURLConnection)(new URL(nestedUrl).openConnection());
+                huc.setRequestMethod("HEAD");
+                huc.connect();
+                respCode = huc.getResponseCode();
+                if(respCode >= 400){
+                    System.out.println(nestedUrl+" is a broken link");
+                }
+                else{
+                    System.out.println(nestedUrl+" is a valid link");
+                }
+            }  catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        driver.quit();
+        JFrame resultFrame = new JFrame();
+        resultFrame.setTitle("Results");
+        resultFrame.setBounds(300, 90, 900, 600);
+        resultFrame.setDefaultCloseOperation(EXIT_ON_CLOSE);
+        resultFrame.setVisible(true);
+        Container c = resultFrame.getContentPane();
+        c.setLayout(new GridBagLayout());
+        GridBagConstraints cons = new GridBagConstraints();
+
+        JLabel labelUrl = new JLabel("url erkar erkaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaar");
+        cons.anchor = GridBagConstraints.FIRST_LINE_START;
+        cons.weighty = 1.0;
+        cons.insets = new Insets(20,10,0,0);
+        cons.gridy = 0;
+        cons.gridx = 0;
+        cons.gridwidth = 1;
+
+        labelUrl.setFont(new Font("Arial", Font.PLAIN, 14));
+        labelUrl.setSize(100, 20);
+        c.add(labelUrl, cons);
+        JLabel labelStatus = new JLabel("valid or not valid");
+        cons.gridx = 1;
+        labelStatus.setFont(new Font("Arial", Font.PLAIN, 14));
+        labelStatus.setSize(100, 20);
+        c.add(labelStatus, cons);
     }
 
     public static void stopAndSaveRecording(){
