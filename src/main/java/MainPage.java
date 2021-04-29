@@ -9,15 +9,15 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.Iterator;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
 
 public class MainPage extends JFrame {
@@ -34,6 +34,7 @@ public class MainPage extends JFrame {
     private String[] typesList =  {"Check for broken links","Functional Test by recording", "Validate the UI", "Check for XSS attack"};
 
     private static WebDriver driver;
+    private DefaultTableCellRenderer renderer = new DefaultTableCellRenderer();
 
     public MainPage(){
         setTitle("Testing Project");
@@ -196,6 +197,8 @@ public class MainPage extends JFrame {
         int respCode = 200;
 
         Map<String,String> results = new HashMap<>();
+
+
         WebDriverManager.chromedriver().setup();
         driver = new ChromeDriver();
         driver.get(homePage);
@@ -205,20 +208,19 @@ public class MainPage extends JFrame {
 
         JFrame resultFrame = new JFrame();
         resultFrame.setTitle("Results");
-        resultFrame.setBounds(300, 90, 900, 600);
-        resultFrame.setDefaultCloseOperation(EXIT_ON_CLOSE);
+        resultFrame.setBounds(10, 10, 900, 600);
         resultFrame.setVisible(true);
         Container c = resultFrame.getContentPane();
 //        JScrollPane c = new JScrollPane(container);
-        c.setLayout(new GridBagLayout());
-        GridBagConstraints cons = new GridBagConstraints();
+     //   c.setLayout(new GridBagLayout());
+    //    GridBagConstraints cons = new GridBagConstraints();
 
         while(it.hasNext()){
 
             nestedUrl = it.next().getAttribute("href");
             if(nestedUrl == null || nestedUrl.isEmpty()){
                 System.out.println("URL is either not configured for anchor tag or it is empty");
-                results.put("Not Configured", nestedUrl);
+                results.put(nestedUrl, "Not Configured");
                 continue;
             }
 
@@ -229,11 +231,11 @@ public class MainPage extends JFrame {
                 respCode = huc.getResponseCode();
                 if(respCode >= 400){
                     System.out.println(nestedUrl+" is a broken link");
-                    results.put("Broken link", nestedUrl);
+                    results.put(nestedUrl, "Broken link");
                 }
                 else{
                     System.out.println(nestedUrl+" is a valid link");
-                    results.put("Valid link", nestedUrl);
+                    results.put(nestedUrl, "Valid link");
                 }
             }  catch (IOException e) {
                 e.printStackTrace();
@@ -241,53 +243,23 @@ public class MainPage extends JFrame {
         }
         driver.quit();
 
-        JLabel titleOfResultsPage = new JLabel("Links list in your provided web page");
-        titleOfResultsPage.setFont(new Font("SansSerif", Font.PLAIN, 20));
-        cons.gridy = 0;
-        cons.anchor = GridBagConstraints.PAGE_START;
-        cons.fill = GridBagConstraints.CENTER;
-        cons.insets = new Insets(10, 0, 30, 0);
-        c.add(titleOfResultsPage, cons);
-
-        JLabel labelUrl = new JLabel("URL");
-        cons.gridy = 1;
-        cons.gridx = 0;
-        cons.fill = GridBagConstraints.HORIZONTAL;
-        cons.anchor = GridBagConstraints.FIRST_LINE_START;
-        cons.insets = new Insets(20,0,0,0);
-        labelUrl.setFont(new Font("SansSerif", Font.BOLD, 16));
-        c.add(labelUrl, cons);
-
-        JLabel labelStatus = new JLabel("Status");
-        cons.gridx = 1;
-        cons.weighty = 1.0;
-        labelStatus.setFont(new Font("SansSerif", Font.BOLD, 16));
-        c.add(labelStatus, cons);
-
-        int i = 2;
-        for (Map.Entry<String,String> entry : results.entrySet()) {
-            String status = entry.getKey();
-            String resultUrl = entry.getValue();
-            JLabel urlLabel = new JLabel(resultUrl);
-            JLabel statusLabel = new JLabel(status);
-            statusLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
-            switch (status){
-                case "Valid link": statusLabel.setForeground(new Color(8, 131, 19)); break;
-                case "Broken link": statusLabel.setForeground(new Color(103, 13, 14)); break;
-                case "Not Configured": statusLabel.setForeground(new Color(255, 197, 77)); break;
-                default: statusLabel.setForeground(new Color(0,0,0));
-            }
-            cons.gridy = i++;
-            cons.gridx = 0;
-            cons.fill = GridBagConstraints.HORIZONTAL;
-            cons.anchor = GridBagConstraints.FIRST_LINE_START;
-            urlLabel.setFont(new Font("SansSerif", Font.PLAIN, 18));
-            statusLabel.setFont(new Font("SansSerif", Font.PLAIN, 18));
-            c.add(urlLabel, cons);
-            cons.gridx = 1;
-            c.add(statusLabel, cons);
+        String[][] data = new String[results.size()][];
+        int ii =0;
+        for(Map.Entry<String,String> entry : results.entrySet()){
+            data[ii++] = new String[] { entry.getKey(), entry.getValue() };
         }
+
+        String column[]={"URL","Status"};
+        final DefaultTableModel model = new DefaultTableModel(data, column);
+        JTable jt=new JTable(model);
+        jt.setRowHeight(30);
+        jt.setBounds(30,40,1000,800);
+        JScrollPane sp=new JScrollPane(jt);
+        resultFrame.add(sp);
+        resultFrame.setSize(300,400);
+        resultFrame.setVisible(true);
     }
+
 
     public void openNewFrame(String url){
         JFrame infoFrame = new JFrame();
