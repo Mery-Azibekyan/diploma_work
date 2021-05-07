@@ -1,23 +1,28 @@
 import io.github.bonigarcia.wdm.WebDriverManager;
 import keeptoo.KButton;
 import keeptoo.KGradientPanel;
-import org.openqa.selenium.By;
-import org.openqa.selenium.Keys;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.apache.commons.io.FileUtils;
+import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.testng.annotations.AfterTest;
+import org.testng.annotations.Test;
 
+import static org.assertj.core.api.Assertions.*;
+
+import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.Iterator;
+import java.nio.file.*;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
 
 public class MainPage extends JFrame {
@@ -34,6 +39,7 @@ public class MainPage extends JFrame {
     private String[] typesList =  {"Check for broken links","Functional Test by recording", "Validate the UI", "Check for XSS attack"};
 
     private static WebDriver driver;
+    private DefaultTableCellRenderer renderer = new DefaultTableCellRenderer();
 
     public MainPage(){
         setTitle("Testing Project");
@@ -196,6 +202,8 @@ public class MainPage extends JFrame {
         int respCode = 200;
 
         Map<String,String> results = new HashMap<>();
+
+
         WebDriverManager.chromedriver().setup();
         driver = new ChromeDriver();
         driver.get(homePage);
@@ -205,20 +213,19 @@ public class MainPage extends JFrame {
 
         JFrame resultFrame = new JFrame();
         resultFrame.setTitle("Results");
-        resultFrame.setBounds(300, 90, 900, 600);
-        resultFrame.setDefaultCloseOperation(EXIT_ON_CLOSE);
+        resultFrame.setBounds(10, 10, 900, 600);
         resultFrame.setVisible(true);
         Container c = resultFrame.getContentPane();
 //        JScrollPane c = new JScrollPane(container);
-        c.setLayout(new GridBagLayout());
-        GridBagConstraints cons = new GridBagConstraints();
+     //   c.setLayout(new GridBagLayout());
+    //    GridBagConstraints cons = new GridBagConstraints();
 
         while(it.hasNext()){
 
             nestedUrl = it.next().getAttribute("href");
             if(nestedUrl == null || nestedUrl.isEmpty()){
                 System.out.println("URL is either not configured for anchor tag or it is empty");
-                results.put("Not Configured", nestedUrl);
+                results.put(nestedUrl, "Not Configured");
                 continue;
             }
 
@@ -229,11 +236,11 @@ public class MainPage extends JFrame {
                 respCode = huc.getResponseCode();
                 if(respCode >= 400){
                     System.out.println(nestedUrl+" is a broken link");
-                    results.put("Broken link", nestedUrl);
+                    results.put(nestedUrl, "Broken link");
                 }
                 else{
                     System.out.println(nestedUrl+" is a valid link");
-                    results.put("Valid link", nestedUrl);
+                    results.put(nestedUrl, "Valid link");
                 }
             }  catch (IOException e) {
                 e.printStackTrace();
@@ -241,53 +248,23 @@ public class MainPage extends JFrame {
         }
         driver.quit();
 
-        JLabel titleOfResultsPage = new JLabel("Links list in your provided web page");
-        titleOfResultsPage.setFont(new Font("SansSerif", Font.PLAIN, 20));
-        cons.gridy = 0;
-        cons.anchor = GridBagConstraints.PAGE_START;
-        cons.fill = GridBagConstraints.CENTER;
-        cons.insets = new Insets(10, 0, 30, 0);
-        c.add(titleOfResultsPage, cons);
-
-        JLabel labelUrl = new JLabel("URL");
-        cons.gridy = 1;
-        cons.gridx = 0;
-        cons.fill = GridBagConstraints.HORIZONTAL;
-        cons.anchor = GridBagConstraints.FIRST_LINE_START;
-        cons.insets = new Insets(20,0,0,0);
-        labelUrl.setFont(new Font("SansSerif", Font.BOLD, 16));
-        c.add(labelUrl, cons);
-
-        JLabel labelStatus = new JLabel("Status");
-        cons.gridx = 1;
-        cons.weighty = 1.0;
-        labelStatus.setFont(new Font("SansSerif", Font.BOLD, 16));
-        c.add(labelStatus, cons);
-
-        int i = 2;
-        for (Map.Entry<String,String> entry : results.entrySet()) {
-            String status = entry.getKey();
-            String resultUrl = entry.getValue();
-            JLabel urlLabel = new JLabel(resultUrl);
-            JLabel statusLabel = new JLabel(status);
-            statusLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
-            switch (status){
-                case "Valid link": statusLabel.setForeground(new Color(8, 131, 19)); break;
-                case "Broken link": statusLabel.setForeground(new Color(103, 13, 14)); break;
-                case "Not Configured": statusLabel.setForeground(new Color(255, 197, 77)); break;
-                default: statusLabel.setForeground(new Color(0,0,0));
-            }
-            cons.gridy = i++;
-            cons.gridx = 0;
-            cons.fill = GridBagConstraints.HORIZONTAL;
-            cons.anchor = GridBagConstraints.FIRST_LINE_START;
-            urlLabel.setFont(new Font("SansSerif", Font.PLAIN, 18));
-            statusLabel.setFont(new Font("SansSerif", Font.PLAIN, 18));
-            c.add(urlLabel, cons);
-            cons.gridx = 1;
-            c.add(statusLabel, cons);
+        String[][] data = new String[results.size()][];
+        int ii =0;
+        for(Map.Entry<String,String> entry : results.entrySet()){
+            data[ii++] = new String[] { entry.getKey(), entry.getValue() };
         }
+
+        String column[]={"URL","Status"};
+        final DefaultTableModel model = new DefaultTableModel(data, column);
+        JTable jt=new JTable(model);
+        jt.setRowHeight(30);
+        jt.setBounds(30,40,1000,800);
+        JScrollPane sp=new JScrollPane(jt);
+        resultFrame.add(sp);
+        resultFrame.setSize(300,400);
+        resultFrame.setVisible(true);
     }
+
 
     public void openNewFrame(String url){
         JFrame infoFrame = new JFrame();
@@ -381,6 +358,116 @@ public class MainPage extends JFrame {
 
     }
 
+    @Test
+    public void makeScreenshots(){
+
+//        List<WebElement> links = driver.findElements(By.tagName("a"));
+//        Iterator<WebElement> it = links.iterator();
+//        String nestedUrl = null;
+       // final String url = URL.getText();
+        ChromeOptions chromeOptions = new ChromeOptions();
+        WebDriverManager.chromedriver().setup();
+        driver = new ChromeDriver(chromeOptions);
+        final String url = "https://fb.com";
+        driver.get(url);
+        final String urlWithoutSymbols = url.replaceAll("://","");
+        System.out.println(urlWithoutSymbols);
+        takeScreenshot(urlWithoutSymbols+"_result.png");
+        compareImages(urlWithoutSymbols+"_result.png", urlWithoutSymbols+"_golden.png",0);
+//        while(it.hasNext()){
+//
+//            nestedUrl = it.next().getAttribute("href");
+//            if(nestedUrl == null || nestedUrl.isEmpty()){
+//                System.out.println("URL is either not configured for anchor tag or it is empty");
+//            }
+//
+//        }
+        driver.quit();
+
+    }
+
+
+    public void takeScreenshot(String current)
+    {
+        try {
+            File scrFile = ((TakesScreenshot)driver).getScreenshotAs(OutputType.FILE);
+            FileUtils.copyFile(scrFile, new File(current));
+
+
+        } catch (IOException e){
+            e.printStackTrace();
+        }
+
+    }
+
+    public void removeFile(String pathString) {
+        Path path = Paths.get(pathString);
+
+        try {
+            Files.delete(path);
+        } catch (NoSuchFileException x) {
+            System.err.format("%s: no such" + " file or directory%n", path);
+        } catch (DirectoryNotEmptyException x) {
+            System.err.format("%s not empty%n", path);
+        } catch (IOException x) {
+            // File permission problems are caught here.
+            System.err.println(x);
+        }
+    }
+
+    protected static double getImgCmpDiffPercent(BufferedImage goldenData, BufferedImage resultData) {
+        int goldenWidth = goldenData.getWidth();
+        int goldenHeight = goldenData.getHeight();
+        int resultWidth = resultData.getWidth();
+        int resultHeight = resultData.getHeight();
+        if (goldenWidth != resultWidth || goldenHeight != resultHeight) {
+            throw new IllegalArgumentException(String.format("Images must have the same dimensions: (%d,%d) vs. (%d,%d)", goldenWidth, goldenHeight, resultWidth, resultHeight));
+        }
+
+        long diff = 0;
+        for (int y = 0; y < goldenHeight; y++) {
+            for (int x = 0; x < goldenWidth; x++) {
+                diff += pixelDiff(goldenData.getRGB(x, y), resultData.getRGB(x, y));
+            }
+        }
+        long maxDiff = 3L * 255 * goldenWidth * goldenHeight;
+
+        return 100.0 * diff / maxDiff;
+    }
+
+    private static int pixelDiff(int goldenPixelRGB, int resultPixelRGB) {
+        int goldenRed = (goldenPixelRGB >> 16) & 0xff;
+        int goldenGreen = (goldenPixelRGB >>  8) & 0xff;
+        int goldenBlue =  goldenPixelRGB        & 0xff;
+        int resultRed = (resultPixelRGB >> 16) & 0xff;
+        int resultGreen = (resultPixelRGB >>  8) & 0xff;
+        int resultBlue =  resultPixelRGB        & 0xff;
+        return Math.abs(goldenRed - resultRed) + Math.abs(goldenGreen - resultGreen) + Math.abs(goldenBlue - resultBlue);
+    }
+
+    public void compareImages(String resultPath, String goldenPath, double diffInPercent)
+    {
+        BufferedImage golden, result;
+        try {
+
+            result = ImageIO.read(new File(resultPath));
+            final File goldenFile = new File(goldenPath);
+            if(!goldenFile.exists()) {
+                FileUtils.copyFile(new File(resultPath), goldenFile);
+            }
+            golden = ImageIO.read(goldenFile);
+
+            double diff = getImgCmpDiffPercent(golden, result);
+
+            assertThat(diff).as("Difference between baseline and checkpoint").isEqualTo(diffInPercent);
+
+            removeFile(resultPath);
+
+        } catch (IOException e) {
+
+            e.printStackTrace();
+        }
+    }
 
 }
 

@@ -1,0 +1,210 @@
+Index: src/main/java/MainPage.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import keeptoo.Drag;\r\nimport keeptoo.KButton;\r\nimport keeptoo.KGradientPanel;\r\n\r\nimport javax.swing.*;\r\nimport java.awt.*;\r\nimport java.awt.event.ActionEvent;\r\nimport java.awt.event.ActionListener;\r\nimport java.net.URL;\r\n\r\npublic class MainPage extends JFrame {\r\n\r\n    private KGradientPanel kPanel;\r\n    private KButton kButton;\r\n    private JLabel title;\r\n    private JLabel URL;\r\n    private JTextField tfURL;\r\n    private JLabel types;\r\n    private JLabel res;\r\n    private JComboBox testTypes;\r\n    private JLabel projectName;\r\n    private String[] typesList =  {\"Check for broken links\",\"Validate the UI\", \"Check for XSS attack\"};\r\n\r\n    public MainPage(){\r\n        setTitle(\"Testing Project\");\r\n        setBounds(300, 90, 900, 600);\r\n        setDefaultCloseOperation(EXIT_ON_CLOSE);\r\n        setResizable(false);\r\n\r\n        kPanel = new KGradientPanel();\r\n        kPanel.setLayout(new GridBagLayout());\r\n        GridBagConstraints c = new GridBagConstraints();\r\n\r\n        this.setContentPane(kPanel);\r\n        Color startColor = new Color(10,102,102);\r\n        Color endColor = new Color(175, 193,204);\r\n        kPanel.kStartColor = startColor;\r\n        kPanel.kEndColor = endColor;\r\n        kPanel.kGradientFocus = 200;\r\n\r\n        projectName = new JLabel(\"ProjectName\");\r\n        projectName.setForeground(new Color(204,204,204));\r\n        projectName.setFont(new Font(\"DialogInput\", Font.PLAIN, 14));\r\n        c.gridy = 0;\r\n        c.gridx = 0;\r\n        c.anchor = GridBagConstraints.FIRST_LINE_START;\r\n        c.weighty = 1.0;\r\n        c.insets = new Insets(30, 30, 20, 0);\r\n\r\n        kPanel.add(projectName, c);\r\n\r\n        title = new JLabel(\"Please fill in testing information\");\r\n        c.gridy = 1;\r\n        c.gridx = 1;\r\n        c.insets = new Insets(0, 0, 30, 0);\r\n        title.setForeground(Color.WHITE);\r\n        title.setFont(new Font(\"SansSerif\", Font.PLAIN, 16));\r\n        title.setSize(300, 30);\r\n        kPanel.add(title, c);\r\n\r\n        URL = new JLabel(\"URL\");\r\n        c.fill = GridBagConstraints.HORIZONTAL;\r\n        c.insets = new Insets(20,100,0,0);\r\n        c.gridy = 2;\r\n        c.gridx = 0;\r\n        c.gridwidth = 1;\r\n        c.weightx = 0.5;\r\n        URL.setForeground(Color.WHITE);\r\n        URL.setFont(new Font(\"Arial\", Font.PLAIN, 14));\r\n        URL.setSize(100, 20);\r\n        kPanel.add(URL, c);\r\n\r\n        tfURL = new JTextField();\r\n        c.fill = GridBagConstraints.HORIZONTAL;\r\n        c.insets = new Insets(20,0,0,100);\r\n        c.gridy = 2;\r\n        c.gridx = 1;\r\n        c.gridwidth = 2;\r\n        c.weightx = 1.0;\r\n        tfURL.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, Color.WHITE));\r\n        tfURL.setOpaque(false);\r\n        tfURL.setFont(new Font(\"Arial\", Font.PLAIN, 14));\r\n        tfURL.setForeground(Color.WHITE);\r\n        tfURL.setSize(250, 20);\r\n        kPanel.add(tfURL,c);\r\n\r\n        types = new JLabel(\"Testing Type\");\r\n        c.fill = GridBagConstraints.HORIZONTAL;\r\n        c.insets = new Insets(70,100,0,0);\r\n        c.gridy = 3;\r\n        c.gridx = 0;\r\n        c.gridwidth = 1;\r\n        c.weightx = 0.5;\r\n        types.setForeground(Color.WHITE);\r\n        types.setFont(new Font(\"Arial\", Font.PLAIN, 14));\r\n        types.setSize(100, 20);\r\n        kPanel.add(types, c);\r\n\r\n        testTypes = new JComboBox(typesList);\r\n        c.fill = GridBagConstraints.HORIZONTAL;\r\n        c.insets = new Insets(70,0,0,100);\r\n        c.gridy = 3;\r\n        c.gridx = 1;\r\n        c.gridwidth = 2;\r\n        c.weightx = 1.0;\r\n        testTypes.setOpaque(false);\r\n        JTextField boxField = (JTextField)testTypes .getEditor().getEditorComponent();\r\n        boxField.setBorder(BorderFactory.createEmptyBorder());\r\n        testTypes.setBorder(BorderFactory.createMatteBorder(2, 2, 2, 2, Color.WHITE));\r\n        testTypes.setBackground(new Color(0, 0, 0, 0));\r\n        testTypes.setFocusable(false);\r\n        testTypes.setFont(new Font(\"Arial\", Font.PLAIN, 14));\r\n        testTypes.setForeground(Color.WHITE);\r\n        testTypes.setSize(250, 20);\r\n        kPanel.add(testTypes, c);\r\n\r\n        kButton = new KButton();\r\n        kButton.setText(\"Start Testing\");\r\n        kButton.kAllowGradient = false;\r\n        kButton.kBackGroundColor = new Color(29, 92, 92, 178);\r\n        kButton.kBorderRadius = 40;\r\n        kButton.setSize(200, 40);\r\n        kButton.setFont(new Font(\"Arial\", Font.PLAIN, 18));\r\n        kButton.kHoverColor = new Color(17, 62, 62, 178);\r\n        kButton.kPressedColor = new Color(29, 92, 92, 178);\r\n\r\n        kButton.kHoverForeGround = Color.WHITE;\r\n        kButton.setBorder(null);\r\n        c.gridy = 4;\r\n        c.gridx = 1;\r\n        kPanel.add(kButton, c);\r\n\r\n        res = new JLabel(\"\");\r\n        res.setFont(new Font(\"SansSerif\", Font.BOLD, 16));\r\n        res.setForeground(new Color(160, 36, 37, 208));\r\n        c.gridy = 5;\r\n        c.gridx = 1;\r\n        c.gridwidth = 2;\r\n        c.fill = GridBagConstraints.CENTER;\r\n        c.insets = new Insets(0,0,0,20);\r\n        kPanel.add(res,c);\r\n        setVisible(true);\r\n\r\n        kButton.addActionListener(new ActionListener() {\r\n            @Override\r\n            public void actionPerformed(ActionEvent e) {\r\n                if (e.getSource() == kButton) {\r\n                    if (!tfURL.getText().isEmpty()) {\r\n                        String url = tfURL.getText();\r\n                        if(isValidURL(url)){\r\n                            String data\r\n                                    = \"URL : \"\r\n                                    + tfURL.getText() + \"\\n\"\r\n                                    + \"Testing Type : \"\r\n                                    + testTypes.getSelectedItem() + \"\\n\";\r\n                            res.setText(data);\r\n                        } else {\r\n                            res.setText(\"Please provide valid URL\");\r\n                        }\r\n                    }\r\n                    else {\r\n                        res.setText(\"Please provide the URL\");\r\n                    }\r\n                }\r\n            }\r\n        });\r\n    }\r\n\r\n    public static boolean isValidURL(String url)\r\n    {\r\n        try {\r\n            new URL(url).toURI();\r\n            return true;\r\n        }\r\n        catch (Exception e) {\r\n            return false;\r\n        }\r\n    }\r\n\r\n\r\n}\r\n\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/MainPage.java	(revision 29f58783671ce6c149c90abcf93d58c2c273b167)
++++ src/main/java/MainPage.java	(date 1619616086325)
+@@ -1,4 +1,3 @@
+-import keeptoo.Drag;
+ import keeptoo.KButton;
+ import keeptoo.KGradientPanel;
+ 
+@@ -10,6 +9,7 @@
+ 
+ public class MainPage extends JFrame {
+ 
++    private CheckForBrokenLinks checkForBrokenLinks;
+     private KGradientPanel kPanel;
+     private KButton kButton;
+     private JLabel title;
+@@ -23,16 +23,17 @@
+ 
+     public MainPage(){
+         setTitle("Testing Project");
+-        setBounds(300, 90, 900, 600);
++        setBounds(20, 20, 1200, 700);
++        setExtendedState(JFrame.MAXIMIZED_BOTH);
+         setDefaultCloseOperation(EXIT_ON_CLOSE);
+-        setResizable(false);
++        setResizable(true);
+ 
+         kPanel = new KGradientPanel();
+         kPanel.setLayout(new GridBagLayout());
+         GridBagConstraints c = new GridBagConstraints();
+ 
+         this.setContentPane(kPanel);
+-        Color startColor = new Color(10,102,102);
++        Color startColor = new Color(72, 137, 137);
+         Color endColor = new Color(175, 193,204);
+         kPanel.kStartColor = startColor;
+         kPanel.kEndColor = endColor;
+@@ -104,11 +105,10 @@
+         c.gridwidth = 2;
+         c.weightx = 1.0;
+         testTypes.setOpaque(false);
+-        JTextField boxField = (JTextField)testTypes .getEditor().getEditorComponent();
+-        boxField.setBorder(BorderFactory.createEmptyBorder());
++//        JTextField boxField = (JTextField)testTypes .getEditor().getEditorComponent();
++//        boxField.setBorder(BorderFactory.createEmptyBorder());
+         testTypes.setBorder(BorderFactory.createMatteBorder(2, 2, 2, 2, Color.WHITE));
+-        testTypes.setBackground(new Color(0, 0, 0, 0));
+-        testTypes.setFocusable(false);
++        testTypes.setBackground(new Color(1, 1, 1, 0));
+         testTypes.setFont(new Font("Arial", Font.PLAIN, 14));
+         testTypes.setForeground(Color.WHITE);
+         testTypes.setSize(250, 20);
+@@ -148,14 +148,16 @@
+                     if (!tfURL.getText().isEmpty()) {
+                         String url = tfURL.getText();
+                         if(isValidURL(url)){
+-                            String data
+-                                    = "URL : "
+-                                    + tfURL.getText() + "\n"
+-                                    + "Testing Type : "
+-                                    + testTypes.getSelectedItem() + "\n";
+-                            res.setText(data);
++                            res.setText("");
++                            String type = testTypes.getSelectedItem().toString();
++                            switch (type) {
++                                case "Check for broken links": {
++                                    checkForBrokenLinks = new CheckForBrokenLinks();
++                                    checkForBrokenLinks.checkForBrokenLinks(url);
++                                }
++                            }
+                         } else {
+-                            res.setText("Please provide valid URL");
++                            res.setText("Please provide the valid URL");
+                         }
+                     }
+                     else {
+Index: MyProject.iml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<module org.jetbrains.idea.maven.project.MavenProjectsManager.isMavenModule=\"true\" type=\"JAVA_MODULE\" version=\"4\">\r\n  <component name=\"NewModuleRootManager\" LANGUAGE_LEVEL=\"JDK_1_8\">\r\n    <output url=\"file://$MODULE_DIR$/target/classes\" />\r\n    <output-test url=\"file://$MODULE_DIR$/target/test-classes\" />\r\n    <content url=\"file://$MODULE_DIR$\">\r\n      <sourceFolder url=\"file://$MODULE_DIR$/src/main/java\" isTestSource=\"false\" />\r\n      <sourceFolder url=\"file://$MODULE_DIR$/src/main/resources\" type=\"java-resource\" />\r\n      <sourceFolder url=\"file://$MODULE_DIR$/src/test/java\" isTestSource=\"true\" />\r\n      <excludeFolder url=\"file://$MODULE_DIR$/target\" />\r\n    </content>\r\n    <orderEntry type=\"inheritedJdk\" />\r\n    <orderEntry type=\"sourceFolder\" forTests=\"false\" />\r\n    <orderEntry type=\"library\" name=\"Maven: org.seleniumhq.selenium:selenium-java:3.141.59\" level=\"project\" />\r\n    <orderEntry type=\"library\" name=\"Maven: org.seleniumhq.selenium:selenium-api:3.141.59\" level=\"project\" />\r\n    <orderEntry type=\"library\" name=\"Maven: org.seleniumhq.selenium:selenium-chrome-driver:3.141.59\" level=\"project\" />\r\n    <orderEntry type=\"library\" name=\"Maven: org.seleniumhq.selenium:selenium-edge-driver:3.141.59\" level=\"project\" />\r\n    <orderEntry type=\"library\" name=\"Maven: org.seleniumhq.selenium:selenium-firefox-driver:3.141.59\" level=\"project\" />\r\n    <orderEntry type=\"library\" name=\"Maven: org.seleniumhq.selenium:selenium-ie-driver:3.141.59\" level=\"project\" />\r\n    <orderEntry type=\"library\" name=\"Maven: org.seleniumhq.selenium:selenium-opera-driver:3.141.59\" level=\"project\" />\r\n    <orderEntry type=\"library\" name=\"Maven: org.seleniumhq.selenium:selenium-remote-driver:3.141.59\" level=\"project\" />\r\n    <orderEntry type=\"library\" name=\"Maven: org.seleniumhq.selenium:selenium-safari-driver:3.141.59\" level=\"project\" />\r\n    <orderEntry type=\"library\" name=\"Maven: org.codehaus.mojo:animal-sniffer-annotations:1.14\" level=\"project\" />\r\n    <orderEntry type=\"library\" name=\"Maven: net.bytebuddy:byte-buddy:1.8.15\" level=\"project\" />\r\n    <orderEntry type=\"library\" name=\"Maven: org.apache.commons:commons-exec:1.3\" level=\"project\" />\r\n    <orderEntry type=\"library\" name=\"Maven: com.google.guava:guava:25.0-jre\" level=\"project\" />\r\n    <orderEntry type=\"library\" name=\"Maven: com.google.code.findbugs:jsr305:1.3.9\" level=\"project\" />\r\n    <orderEntry type=\"library\" name=\"Maven: org.checkerframework:checker-compat-qual:2.0.0\" level=\"project\" />\r\n    <orderEntry type=\"library\" name=\"Maven: com.google.errorprone:error_prone_annotations:2.1.3\" level=\"project\" />\r\n    <orderEntry type=\"library\" name=\"Maven: com.google.j2objc:j2objc-annotations:1.1\" level=\"project\" />\r\n    <orderEntry type=\"library\" name=\"Maven: org.seleniumhq.selenium:selenium-support:3.141.59\" level=\"project\" />\r\n    <orderEntry type=\"library\" name=\"Maven: com.squareup.okhttp3:okhttp:3.11.0\" level=\"project\" />\r\n    <orderEntry type=\"library\" name=\"Maven: com.squareup.okio:okio:1.14.0\" level=\"project\" />\r\n    <orderEntry type=\"module-library\">\r\n      <library>\r\n        <CLASSES>\r\n          <root url=\"jar://$USER_HOME$/Downloads/KControls.jar!/\" />\r\n        </CLASSES>\r\n        <JAVADOC />\r\n        <SOURCES />\r\n      </library>\r\n    </orderEntry>\r\n  </component>\r\n</module>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- MyProject.iml	(revision 29f58783671ce6c149c90abcf93d58c2c273b167)
++++ MyProject.iml	(date 1619610115451)
+@@ -40,5 +40,31 @@
+         <SOURCES />
+       </library>
+     </orderEntry>
++    <orderEntry type="module-library">
++      <library>
++        <CLASSES>
++          <root url="jar://$USER_HOME$/Downloads/selenium-java-3.141.59.zip!/libs" />
++        </CLASSES>
++        <JAVADOC />
++        <SOURCES />
++        <jarDirectory url="jar://$USER_HOME$/Downloads/selenium-java-3.141.59.zip!/libs" recursive="false" />
++      </library>
++    </orderEntry>
++    <orderEntry type="module-library">
++      <library>
++        <CLASSES>
++          <root url="jar://C:/selenium-java-3.141.59 (1)/client-combined-3.141.59.jar!/" />
++          <root url="jar://C:/selenium-java-3.141.59 (1)/libs/byte-buddy-1.8.15.jar!/" />
++          <root url="jar://C:/selenium-java-3.141.59 (1)/libs/commons-exec-1.3.jar!/" />
++          <root url="jar://C:/selenium-java-3.141.59 (1)/libs/guava-25.0-jre.jar!/" />
++          <root url="jar://C:/selenium-java-3.141.59 (1)/libs/okhttp-3.11.0.jar!/" />
++          <root url="jar://C:/selenium-java-3.141.59 (1)/libs/okio-1.14.0.jar!/" />
++        </CLASSES>
++        <JAVADOC />
++        <SOURCES>
++          <root url="jar://C:/selenium-java-3.141.59 (1)/client-combined-3.141.59-sources.jar!/" />
++        </SOURCES>
++      </library>
++    </orderEntry>
+   </component>
+ </module>
+\ No newline at end of file
+Index: src/main/java/CheckForBrokenLinks.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main/java/CheckForBrokenLinks.java	(date 1619613091267)
++++ src/main/java/CheckForBrokenLinks.java	(date 1619613091267)
+@@ -0,0 +1,78 @@
++import java.io.IOException;
++import java.net.HttpURLConnection;
++import java.net.MalformedURLException;
++import java.net.URL;
++import java.util.Iterator;
++import java.util.List;
++
++import org.openqa.selenium.By;
++import org.openqa.selenium.WebDriver;
++import org.openqa.selenium.WebElement;
++import org.openqa.selenium.chrome.ChromeDriver;
++
++
++public class CheckForBrokenLinks {
++
++    private static WebDriver driver = null;
++    public void checkForBrokenLinks(final String URL){
++        String homePage = URL;
++        String url = "";
++        HttpURLConnection huc = null;
++        int respCode = 200;
++
++        driver = new ChromeDriver();
++
++        driver.manage().window().maximize();
++
++        driver.get(homePage);
++
++        List<WebElement> links = driver.findElements(By.tagName("a"));
++
++        Iterator<WebElement> it = links.iterator();
++
++        while(it.hasNext()){
++
++            url = it.next().getAttribute("href");
++
++            System.out.println(url);
++
++            if(url == null || url.isEmpty()){
++                System.out.println("URL is either not configured for anchor tag or it is empty");
++                continue;
++            }
++
++            if(!url.startsWith(homePage)){
++                System.out.println("URL belongs to another domain, skipping it.");
++                continue;
++            }
++
++            try {
++                huc = (HttpURLConnection)(new URL(url).openConnection());
++
++                huc.setRequestMethod("HEAD");
++
++                huc.connect();
++
++                respCode = huc.getResponseCode();
++
++                if(respCode >= 400){
++                    System.out.println(url+" is a broken link");
++                }
++                else{
++                    System.out.println(url+" is a valid link");
++                }
++
++            } catch (MalformedURLException e) {
++                e.printStackTrace();
++            } catch (IOException e) {
++                e.printStackTrace();
++            }
++        }
++
++        driver.quit();
++
++    }
++
++
++}
++
