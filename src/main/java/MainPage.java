@@ -1,21 +1,26 @@
 import io.github.bonigarcia.wdm.WebDriverManager;
 import keeptoo.KButton;
 import keeptoo.KGradientPanel;
-import org.openqa.selenium.By;
-import org.openqa.selenium.Keys;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.apache.commons.io.FileUtils;
+import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.testng.annotations.AfterTest;
+import org.testng.annotations.Test;
 
+import static org.assertj.core.api.Assertions.*;
+
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.file.*;
 import java.util.*;
 import java.util.List;
 
@@ -353,6 +358,116 @@ public class MainPage extends JFrame {
 
     }
 
+    @Test
+    public void makeScreenshots(){
+
+//        List<WebElement> links = driver.findElements(By.tagName("a"));
+//        Iterator<WebElement> it = links.iterator();
+//        String nestedUrl = null;
+       // final String url = URL.getText();
+        ChromeOptions chromeOptions = new ChromeOptions();
+        WebDriverManager.chromedriver().setup();
+        driver = new ChromeDriver(chromeOptions);
+        final String url = "https://fb.com";
+        driver.get(url);
+        final String urlWithoutSymbols = url.replaceAll("://","");
+        System.out.println(urlWithoutSymbols);
+        takeScreenshot(urlWithoutSymbols+"_result.png");
+        compareImages(urlWithoutSymbols+"_result.png", urlWithoutSymbols+"_golden.png",0);
+//        while(it.hasNext()){
+//
+//            nestedUrl = it.next().getAttribute("href");
+//            if(nestedUrl == null || nestedUrl.isEmpty()){
+//                System.out.println("URL is either not configured for anchor tag or it is empty");
+//            }
+//
+//        }
+        driver.quit();
+
+    }
+
+
+    public void takeScreenshot(String current)
+    {
+        try {
+            File scrFile = ((TakesScreenshot)driver).getScreenshotAs(OutputType.FILE);
+            FileUtils.copyFile(scrFile, new File(current));
+
+
+        } catch (IOException e){
+            e.printStackTrace();
+        }
+
+    }
+
+    public void removeFile(String pathString) {
+        Path path = Paths.get(pathString);
+
+        try {
+            Files.delete(path);
+        } catch (NoSuchFileException x) {
+            System.err.format("%s: no such" + " file or directory%n", path);
+        } catch (DirectoryNotEmptyException x) {
+            System.err.format("%s not empty%n", path);
+        } catch (IOException x) {
+            // File permission problems are caught here.
+            System.err.println(x);
+        }
+    }
+
+    protected static double getImgCmpDiffPercent(BufferedImage goldenData, BufferedImage resultData) {
+        int goldenWidth = goldenData.getWidth();
+        int goldenHeight = goldenData.getHeight();
+        int resultWidth = resultData.getWidth();
+        int resultHeight = resultData.getHeight();
+        if (goldenWidth != resultWidth || goldenHeight != resultHeight) {
+            throw new IllegalArgumentException(String.format("Images must have the same dimensions: (%d,%d) vs. (%d,%d)", goldenWidth, goldenHeight, resultWidth, resultHeight));
+        }
+
+        long diff = 0;
+        for (int y = 0; y < goldenHeight; y++) {
+            for (int x = 0; x < goldenWidth; x++) {
+                diff += pixelDiff(goldenData.getRGB(x, y), resultData.getRGB(x, y));
+            }
+        }
+        long maxDiff = 3L * 255 * goldenWidth * goldenHeight;
+
+        return 100.0 * diff / maxDiff;
+    }
+
+    private static int pixelDiff(int goldenPixelRGB, int resultPixelRGB) {
+        int goldenRed = (goldenPixelRGB >> 16) & 0xff;
+        int goldenGreen = (goldenPixelRGB >>  8) & 0xff;
+        int goldenBlue =  goldenPixelRGB        & 0xff;
+        int resultRed = (resultPixelRGB >> 16) & 0xff;
+        int resultGreen = (resultPixelRGB >>  8) & 0xff;
+        int resultBlue =  resultPixelRGB        & 0xff;
+        return Math.abs(goldenRed - resultRed) + Math.abs(goldenGreen - resultGreen) + Math.abs(goldenBlue - resultBlue);
+    }
+
+    public void compareImages(String resultPath, String goldenPath, double diffInPercent)
+    {
+        BufferedImage golden, result;
+        try {
+
+            result = ImageIO.read(new File(resultPath));
+            final File goldenFile = new File(goldenPath);
+            if(!goldenFile.exists()) {
+                FileUtils.copyFile(new File(resultPath), goldenFile);
+            }
+            golden = ImageIO.read(goldenFile);
+
+            double diff = getImgCmpDiffPercent(golden, result);
+
+            assertThat(diff).as("Difference between baseline and checkpoint").isEqualTo(diffInPercent);
+
+            removeFile(resultPath);
+
+        } catch (IOException e) {
+
+            e.printStackTrace();
+        }
+    }
 
 }
 
