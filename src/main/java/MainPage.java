@@ -1,3 +1,4 @@
+
 import io.github.bonigarcia.wdm.WebDriverManager;
 import keeptoo.KButton;
 import keeptoo.KGradientPanel;
@@ -5,14 +6,11 @@ import org.apache.commons.io.FileUtils;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
-import org.testng.annotations.AfterTest;
 import org.testng.annotations.Test;
 
-import static org.assertj.core.api.Assertions.*;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -21,9 +19,9 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.*;
+import java.text.NumberFormat;
 import java.util.*;
 import java.util.List;
-
 
 public class MainPage extends JFrame {
 
@@ -36,12 +34,11 @@ public class MainPage extends JFrame {
     private JLabel res;
     private JComboBox testTypes;
     private JLabel projectName;
-    private String[] typesList =  {"Check for broken links","Functional Test by recording", "Validate the UI", "Check for XSS attack"};
+    private String[] typesList = {"Check for broken links", "Functional Test by recording", "Validate the UI", "Check for XSS attack"};
 
     private static WebDriver driver;
-    private DefaultTableCellRenderer renderer = new DefaultTableCellRenderer();
 
-    public MainPage(){
+    public MainPage() {
         setTitle("Testing Project");
         setBounds(20, 20, 1200, 700);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
@@ -53,14 +50,14 @@ public class MainPage extends JFrame {
         GridBagConstraints c = new GridBagConstraints();
 
         this.setContentPane(kPanel);
-        Color startColor = new Color(10,102,102);
-        Color endColor = new Color(175, 193,204);
+        Color startColor = new Color(10, 102, 102);
+        Color endColor = new Color(175, 193, 204);
         kPanel.kStartColor = startColor;
         kPanel.kEndColor = endColor;
         kPanel.kGradientFocus = 200;
 
         projectName = new JLabel("ProjectName");
-        projectName.setForeground(new Color(204,204,204));
+        projectName.setForeground(new Color(204, 204, 204));
         projectName.setFont(new Font("DialogInput", Font.PLAIN, 14));
         c.gridy = 0;
         c.gridx = 0;
@@ -81,7 +78,7 @@ public class MainPage extends JFrame {
 
         URL = new JLabel("URL");
         c.fill = GridBagConstraints.HORIZONTAL;
-        c.insets = new Insets(20,100,0,0);
+        c.insets = new Insets(20, 100, 0, 0);
         c.gridy = 2;
         c.gridx = 0;
         c.gridwidth = 1;
@@ -93,7 +90,7 @@ public class MainPage extends JFrame {
 
         tfURL = new JTextField("https://fb.com");
         c.fill = GridBagConstraints.HORIZONTAL;
-        c.insets = new Insets(20,0,0,100);
+        c.insets = new Insets(20, 0, 0, 100);
         c.gridy = 2;
         c.gridx = 1;
         c.gridwidth = 2;
@@ -103,11 +100,11 @@ public class MainPage extends JFrame {
         tfURL.setFont(new Font("Arial", Font.PLAIN, 14));
         tfURL.setForeground(Color.WHITE);
         tfURL.setSize(250, 20);
-        kPanel.add(tfURL,c);
+        kPanel.add(tfURL, c);
 
         types = new JLabel("Testing Type");
         c.fill = GridBagConstraints.HORIZONTAL;
-        c.insets = new Insets(70,100,0,0);
+        c.insets = new Insets(70, 100, 0, 0);
         c.gridy = 3;
         c.gridx = 0;
         c.gridwidth = 1;
@@ -119,13 +116,13 @@ public class MainPage extends JFrame {
 
         testTypes = new JComboBox(typesList);
         c.fill = GridBagConstraints.HORIZONTAL;
-        c.insets = new Insets(70,0,0,100);
+        c.insets = new Insets(70, 0, 0, 100);
         c.gridy = 3;
         c.gridx = 1;
         c.gridwidth = 2;
         c.weightx = 1.0;
         testTypes.setOpaque(false);
-        JTextField boxField = (JTextField)testTypes .getEditor().getEditorComponent();
+        JTextField boxField = (JTextField) testTypes.getEditor().getEditorComponent();
         boxField.setBorder(BorderFactory.createEmptyBorder());
         testTypes.setBorder(BorderFactory.createMatteBorder(2, 2, 2, 2, Color.WHITE));
         testTypes.setBackground(new Color(0, 0, 0, 0));
@@ -158,50 +155,54 @@ public class MainPage extends JFrame {
         c.gridx = 1;
         c.gridwidth = 2;
         c.fill = GridBagConstraints.CENTER;
-        c.insets = new Insets(0,0,0,20);
-        kPanel.add(res,c);
+        c.insets = new Insets(0, 0, 0, 20);
+        kPanel.add(res, c);
         setVisible(true);
 
         kButton.addActionListener(e -> {
             if (e.getSource() == kButton) {
                 if (!tfURL.getText().isEmpty()) {
                     final String url = tfURL.getText();
-                    if(isValidURL(url)){
+                    if (isValidURL(url)) {
                         String type = testTypes.getSelectedItem().toString();
-                        switch (type){
-                            case "Check for broken links": checkForBrokenLinks(url); break;
-                            case "Functional Test by recording": openNewFrame(url); break;
+                        switch (type) {
+                            case "Check for broken links":
+                                checkForBrokenLinks(url);
+                                break;
+                            case "Functional Test by recording":
+                                openNewFrameForRecording(url);
+                                break;
+                            case "Validate the UI":
+                                openNewFrameForScreenshot(url);
+                                break;
                         }
-                        //res.setText(data);
                     } else {
                         res.setText("Please provide valid URL");
                     }
-                }
-                else {
+                } else {
                     res.setText("Please provide the URL");
                 }
             }
         });
     }
 
-    public static boolean isValidURL(String url)
-    {
+    public static boolean isValidURL(String url) {
         try {
             new URL(url).toURI();
             return true;
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             return false;
         }
     }
+
     @lombok.SneakyThrows
-    public void checkForBrokenLinks(String url){
+    public void checkForBrokenLinks(String url) {
         String homePage = url;
         String nestedUrl = "";
         HttpURLConnection huc = null;
         int respCode = 200;
 
-        Map<String,String> results = new HashMap<>();
+        Map<String, String> results = new HashMap<>();
 
 
         WebDriverManager.chromedriver().setup();
@@ -216,59 +217,53 @@ public class MainPage extends JFrame {
         resultFrame.setBounds(10, 10, 900, 600);
         resultFrame.setVisible(true);
         Container c = resultFrame.getContentPane();
-//        JScrollPane c = new JScrollPane(container);
-     //   c.setLayout(new GridBagLayout());
-    //    GridBagConstraints cons = new GridBagConstraints();
-
-        while(it.hasNext()){
+        while (it.hasNext()) {
 
             nestedUrl = it.next().getAttribute("href");
-            if(nestedUrl == null || nestedUrl.isEmpty()){
+            if (nestedUrl == null || nestedUrl.isEmpty()) {
                 System.out.println("URL is either not configured for anchor tag or it is empty");
                 results.put(nestedUrl, "Not Configured");
                 continue;
             }
-
             try {
-                huc = (HttpURLConnection)(new URL(nestedUrl).openConnection());
+                huc = (HttpURLConnection) (new URL(nestedUrl).openConnection());
                 huc.setRequestMethod("HEAD");
                 huc.connect();
                 respCode = huc.getResponseCode();
-                if(respCode >= 400){
-                    System.out.println(nestedUrl+" is a broken link");
+                if (respCode >= 400) {
+                    System.out.println(nestedUrl + " is a broken link");
                     results.put(nestedUrl, "Broken link");
-                }
-                else{
-                    System.out.println(nestedUrl+" is a valid link");
+                } else {
+                    System.out.println(nestedUrl + " is a valid link");
                     results.put(nestedUrl, "Valid link");
                 }
-            }  catch (IOException e) {
+            } catch (IOException e) {
                 e.printStackTrace();
             }
         }
         driver.quit();
 
         String[][] data = new String[results.size()][];
-        int ii =0;
-        for(Map.Entry<String,String> entry : results.entrySet()){
-            data[ii++] = new String[] { entry.getKey(), entry.getValue() };
+        int ii = 0;
+        for (Map.Entry<String, String> entry : results.entrySet()) {
+            data[ii++] = new String[]{entry.getKey(), entry.getValue()};
         }
 
-        String column[]={"URL","Status"};
+        String column[] = {"URL", "Status"};
         final DefaultTableModel model = new DefaultTableModel(data, column);
-        JTable jt=new JTable(model);
+        JTable jt = new JTable(model);
         jt.setRowHeight(30);
-        jt.setBounds(30,40,1000,800);
-        JScrollPane sp=new JScrollPane(jt);
+        jt.setBounds(30, 40, 1000, 800);
+        JScrollPane sp = new JScrollPane(jt);
         resultFrame.add(sp);
-        resultFrame.setSize(300,400);
+        resultFrame.setSize(300, 400);
         resultFrame.setVisible(true);
     }
 
 
-    public void openNewFrame(String url){
+    public void openNewFrameForRecording(String url) {
         JFrame infoFrame = new JFrame();
-        infoFrame.setTitle("Record your test");
+        infoFrame.setTitle("Function Test by recording");
         infoFrame.setBounds(300, 90, 900, 600);
         infoFrame.setVisible(true);
         Container c = infoFrame.getContentPane();
@@ -281,14 +276,14 @@ public class MainPage extends JFrame {
         JLabel info = new JLabel("<html>To start the testing click on the Start button and" +
                 "then do actions that you want to test. <br>After making all needed actions <b><br>CLOSE THE RECORDING BROWSER AND " +
                 "CLICK ON THE STOP AND SAVE BUTTON</b>");
-        info.setFont(new Font("SansSerif",Font.PLAIN, 14));
+        info.setFont(new Font("SansSerif", Font.PLAIN, 14));
         cons.gridy = 1;
         cons.gridx = 0;
         cons.gridwidth = 2;
         cons.weightx = 1.0;
         cons.anchor = GridBagConstraints.PAGE_END;
         cons.fill = GridBagConstraints.HORIZONTAL;
-        cons.insets = new Insets(0,50,40,50);
+        cons.insets = new Insets(0, 50, 40, 50);
         c.add(info, cons);
 
         KButton start = new KButton();
@@ -303,7 +298,7 @@ public class MainPage extends JFrame {
         start.setBorder(null);
         cons.gridy = 2;
         cons.gridx = 0;
-        cons.insets = new Insets(20,50,0,25);
+        cons.insets = new Insets(20, 50, 0, 25);
         cons.fill = GridBagConstraints.HORIZONTAL;
         cons.gridwidth = 1;
         c.add(start, cons);
@@ -320,7 +315,7 @@ public class MainPage extends JFrame {
         stop.setBorder(null);
         cons.gridy = 2;
         cons.gridx = 1;
-        cons.insets = new Insets(20,25,0,50);
+        cons.insets = new Insets(20, 25, 0, 50);
         c.add(stop, cons);
 
         start.addActionListener(e -> startRecording(url));
@@ -328,12 +323,11 @@ public class MainPage extends JFrame {
     }
 
 
-
     @lombok.SneakyThrows
-    public static void startRecording(String url){
+    public static void startRecording(String url) {
 
         ChromeOptions chromeOptions = new ChromeOptions();
-        chromeOptions.addExtensions (new File("src/main/resources/extension_3_17_0_0.crx"));
+        chromeOptions.addExtensions(new File("src/main/resources/extension_3_17_0_0.crx"));
         WebDriverManager.chromedriver().setup();
         driver = new ChromeDriver(chromeOptions);
         driver.get("chrome-extension://mooikfkahbdckldjjndioackbalphokd/index.html");
@@ -344,36 +338,117 @@ public class MainPage extends JFrame {
     }
 
 
-    public static void stopAndSaveRecording(){
+    public static void stopAndSaveRecording() {
 
         driver.findElement(By.cssSelector("button.btn-action.active.si-record")).click();
         driver.findElement(By.cssSelector("input[name=\"test caseName\"]")).sendKeys("Test1" + Keys.ENTER);
-
         driver.quit();
-
-
     }
 
     public static void playbackRecording() {
 
     }
 
+
+    public void openNewFrameForScreenshot(String url) {
+        JFrame infoFrame = new JFrame();
+        infoFrame.setTitle("UI test by screenshot");
+        infoFrame.setBounds(300, 90, 900, 600);
+        infoFrame.setVisible(true);
+        Container c = infoFrame.getContentPane();
+        c.setLayout(new GridBagLayout());
+        GridBagConstraints cons = new GridBagConstraints();
+
+        JLabel info = new JLabel("<html>The test will take the screenshot of your provided website<br>" +
+                " and then will compare that screenshot with your required result. <br>If you are using this system the first time, the screenshot will be saved <br>" +
+                "like a required result.<br><b>Please provide the permissible percentage of difference" +
+                "between screenshots and click START<b>");
+        info.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        cons.gridy = 0;
+        cons.gridx = 0;
+        cons.gridwidth = 2;
+        cons.fill = GridBagConstraints.HORIZONTAL;
+        cons.insets = new Insets(0, 50, 40, 50);
+        c.add(info, cons);
+
+        JLabel percentLabel = new JLabel("Permissible percentage of difference");
+        percentLabel.setFont(new Font("SansSerif", Font.BOLD, 14));
+        NumberFormat percentFormat;
+        percentFormat = NumberFormat.getNumberInstance();
+        percentFormat.setMinimumFractionDigits(3);
+        JFormattedTextField percentField = new JFormattedTextField(percentFormat);
+        percentField.setValue(0.1);
+
+        cons.gridy = 1;
+        cons.gridx = 0;
+        cons.gridwidth = 1;
+        c.add(percentLabel, cons);
+        cons.gridx = 1;
+        c.add(percentField, cons);
+
+
+        KButton start = new KButton();
+        start.setText("Start Testing");
+        start.kAllowGradient = false;
+        start.kBackGroundColor = new Color(29, 92, 92, 178);
+        start.kBorderRadius = 40;
+        start.setFont(new Font("Arial", Font.PLAIN, 18));
+        start.kHoverColor = new Color(17, 62, 62, 178);
+        start.kPressedColor = new Color(29, 92, 92, 178);
+        start.kHoverForeGround = Color.WHITE;
+        start.setBorder(null);
+        cons.gridy = 2;
+        cons.gridx = 0;
+        cons.gridwidth = 2;
+        cons.insets = new Insets(20, 50, 0, 25);
+        cons.fill = GridBagConstraints.HORIZONTAL;
+        c.add(start, cons);
+
+        start.addActionListener(e -> {infoFrame.dispose(); makeScreenshots(url, ((Number)percentField.getValue()).doubleValue());});
+    }
+
+    public void openNewFrameForResults(Double diff) {
+        JFrame infoFrame = new JFrame();
+        infoFrame.setTitle("UI test results");
+        infoFrame.setBounds(300, 90, 900, 600);
+        infoFrame.setVisible(true);
+        Container c = infoFrame.getContentPane();
+        c.setLayout(new GridBagLayout());
+        GridBagConstraints cons = new GridBagConstraints();
+        JLabel info = new JLabel();
+
+        if(diff == 0){
+            info.setText("Your website UI is okay. There is no difference between screenshots.");
+            c.add(info, cons);
+        } else {
+        info = new JLabel("<html>There are some issues in your website UI.<br>" +
+                "The difference between screenshots are: ");
+        JLabel result = new JLabel(diff.toString());
+        info.setFont(new Font("SansSerif", Font.BOLD, 24));
+        cons.gridy = 0;
+        c.add(info, cons);
+        cons.gridy = 1;
+        c.add(result, cons);
+        }
+
+
+    }
+
+
+
     @Test
-    public void makeScreenshots(){
+    public void makeScreenshots(String url, Double diffInPercent) {
 
 //        List<WebElement> links = driver.findElements(By.tagName("a"));
 //        Iterator<WebElement> it = links.iterator();
 //        String nestedUrl = null;
-       // final String url = URL.getText();
-        ChromeOptions chromeOptions = new ChromeOptions();
         WebDriverManager.chromedriver().setup();
-        driver = new ChromeDriver(chromeOptions);
-        final String url = "https://fb.com";
+        driver = new ChromeDriver();
         driver.get(url);
-        final String urlWithoutSymbols = url.replaceAll("://","");
+        final String urlWithoutSymbols = url.replaceAll("://", "");
         System.out.println(urlWithoutSymbols);
-        takeScreenshot(urlWithoutSymbols+"_result.png");
-        compareImages(urlWithoutSymbols+"_result.png", urlWithoutSymbols+"_golden.png",0);
+        takeScreenshot(urlWithoutSymbols + "_result.png");
+        double diff = compareImages(urlWithoutSymbols + "_result.png", urlWithoutSymbols + "_golden.png", diffInPercent);
 //        while(it.hasNext()){
 //
 //            nestedUrl = it.next().getAttribute("href");
@@ -382,22 +457,23 @@ public class MainPage extends JFrame {
 //            }
 //
 //        }
+        if(diff <= diffInPercent){
+            diff = 0;
+            removeFile(urlWithoutSymbols + "_result.png");
+        }
         driver.quit();
+        openNewFrameForResults(diff);
 
     }
 
 
-    public void takeScreenshot(String current)
-    {
+    public void takeScreenshot(String current) {
         try {
-            File scrFile = ((TakesScreenshot)driver).getScreenshotAs(OutputType.FILE);
+            File scrFile = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
             FileUtils.copyFile(scrFile, new File(current));
-
-
-        } catch (IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
         }
-
     }
 
     public void removeFile(String pathString) {
@@ -437,36 +513,34 @@ public class MainPage extends JFrame {
 
     private static int pixelDiff(int goldenPixelRGB, int resultPixelRGB) {
         int goldenRed = (goldenPixelRGB >> 16) & 0xff;
-        int goldenGreen = (goldenPixelRGB >>  8) & 0xff;
-        int goldenBlue =  goldenPixelRGB        & 0xff;
+        int goldenGreen = (goldenPixelRGB >> 8) & 0xff;
+        int goldenBlue = goldenPixelRGB & 0xff;
         int resultRed = (resultPixelRGB >> 16) & 0xff;
-        int resultGreen = (resultPixelRGB >>  8) & 0xff;
-        int resultBlue =  resultPixelRGB        & 0xff;
+        int resultGreen = (resultPixelRGB >> 8) & 0xff;
+        int resultBlue = resultPixelRGB & 0xff;
         return Math.abs(goldenRed - resultRed) + Math.abs(goldenGreen - resultGreen) + Math.abs(goldenBlue - resultBlue);
     }
 
-    public void compareImages(String resultPath, String goldenPath, double diffInPercent)
-    {
+    public double compareImages(String resultPath, String goldenPath, double diffInPercent) {
         BufferedImage golden, result;
+        double diff = 0;
         try {
-
             result = ImageIO.read(new File(resultPath));
             final File goldenFile = new File(goldenPath);
-            if(!goldenFile.exists()) {
+            if (!goldenFile.exists()) {
                 FileUtils.copyFile(new File(resultPath), goldenFile);
             }
             golden = ImageIO.read(goldenFile);
+            diff = getImgCmpDiffPercent(golden, result);
 
-            double diff = getImgCmpDiffPercent(golden, result);
+//            assertThat(diff).as("Difference between baseline and checkpoint").isEqualTo(diffInPercent);
+//            removeFile(resultPath);
 
-            assertThat(diff).as("Difference between baseline and checkpoint").isEqualTo(diffInPercent);
-
-            removeFile(resultPath);
 
         } catch (IOException e) {
-
             e.printStackTrace();
         }
+        return diff;
     }
 
 }
