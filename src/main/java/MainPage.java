@@ -177,13 +177,13 @@ public class MainPage extends JFrame {
                     if (isValidURL(url)) {
                         String type = testTypes.getSelectedItem().toString();
                         switch (type) {
-                            case "Check for broken links":
+                            case "Check for broken links and images":
                                 checkForBrokenLinksAndImages(url);
                                 break;
                             case "Functional Test by recording":
                                 openNewFrameForRecording(url);
                                 break;
-                            case "Validate the UI":
+                            case "Validate the UI by screenshot":
                                 openNewFrameForScreenshot(url);
                                 break;
                             case "Check for XSS attack":
@@ -263,11 +263,18 @@ public class MainPage extends JFrame {
 
 
     public void openNewFrameForRecording(String url) {
-            JFrame infoFrame = new JFrame();
-            infoFrame.setTitle("Function Test by recording");
-            infoFrame.setBounds(300, 90, 900, 600);
-            infoFrame.setVisible(true);
-            Container c = infoFrame.getContentPane();
+        JFrame infoFrame = new JFrame();
+        BufferedImage backImage;
+        try {
+            backImage = ImageIO.read(new File("img1.png"));
+            infoFrame.setContentPane(new ImagePanel(backImage));
+        }catch (IOException e) {
+            e.printStackTrace();
+        }
+        infoFrame.setTitle("Function Test by recording");
+        infoFrame.setBounds(300, 90, 900, 600);
+        infoFrame.setVisible(true);
+        Container c = infoFrame.getContentPane();
         c.setLayout(new GridBagLayout());
         GridBagConstraints cons = new GridBagConstraints();
         JLabel URL = new JLabel("<html><b>URL:<b> " + url);
@@ -353,6 +360,13 @@ public class MainPage extends JFrame {
 
     public void openNewFrameForScreenshot(String url) {
         JFrame infoFrame = new JFrame();
+        BufferedImage backImage;
+        try {
+            backImage = ImageIO.read(new File("img1.png"));
+            infoFrame.setContentPane(new ImagePanel(backImage));
+        }catch (IOException e) {
+            e.printStackTrace();
+        }
         infoFrame.setTitle("UI test by screenshot");
         infoFrame.setBounds(300, 90, 900, 600);
         infoFrame.setVisible(true);
@@ -413,6 +427,13 @@ public class MainPage extends JFrame {
 
     public void openNewFrameForResults(Double diff) {
         JFrame infoFrame = new JFrame();
+        BufferedImage backImage;
+        try {
+            backImage = ImageIO.read(new File("img1.png"));
+            infoFrame.setContentPane(new ImagePanel(backImage));
+        }catch (IOException e) {
+            e.printStackTrace();
+        }
         infoFrame.setTitle("UI test results");
         infoFrame.setBounds(300, 90, 900, 600);
         infoFrame.setVisible(true);
@@ -595,7 +616,7 @@ public class MainPage extends JFrame {
 
     public boolean isAlertDisplayed(WebDriver driver) {
         boolean foundAlert;
-        WebDriverWait wait = new WebDriverWait(driver, 10);
+        WebDriverWait wait = new WebDriverWait(driver, 5);
         try {
             wait.until(ExpectedConditions.alertIsPresent());
             foundAlert = true;
@@ -607,6 +628,14 @@ public class MainPage extends JFrame {
 
     public void openNewFrameForXSSResult(boolean foundAlert){
         JFrame infoFrame = new JFrame();
+        BufferedImage backImage;
+        try {
+            backImage = ImageIO.read(new File("img1.png"));
+            infoFrame.setContentPane(new ImagePanel(backImage));
+        }catch (IOException e) {
+            e.printStackTrace();
+        }
+
         infoFrame.setTitle("XSS attack test results");
         infoFrame.setBounds(300, 90, 900, 600);
         infoFrame.setVisible(true);
