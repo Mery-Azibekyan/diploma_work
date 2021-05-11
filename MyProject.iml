@@ -64,7 +64,6 @@
     <orderEntry type="library" name="Maven: dev.klepto.lazyvoids:lazyvoids:0.0.1" level="project" />
     <orderEntry type="library" name="Maven: one.util:streamex:0.7.2" level="project" />
     <orderEntry type="library" scope="RUNTIME" name="Maven: net.jodah:typetools:0.6.2" level="project" />
-    <orderEntry type="library" name="Maven: MyProject:MyProject:1.0-SNAPSHOT" level="project" />
     <orderEntry type="library" name="Maven: io.github.bonigarcia:webdrivermanager:4.2.2" level="project" />
     <orderEntry type="library" name="Maven: org.slf4j:slf4j-api:1.7.30" level="project" />
     <orderEntry type="library" name="Maven: commons-io:commons-io:2.8.0" level="project" />

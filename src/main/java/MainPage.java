@@ -2,14 +2,15 @@
 import io.github.bonigarcia.wdm.WebDriverManager;
 import keeptoo.KButton;
 import keeptoo.KGradientPanel;
-import org.apache.commons.compress.archivers.zip.ScatterZipOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.openqa.selenium.*;
+import org.openqa.selenium.Dimension;
+import org.openqa.selenium.Point;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.testng.annotations.Test;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -17,12 +18,15 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.*;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static java.sql.DriverManager.getDriver;
@@ -41,11 +45,13 @@ public class MainPage extends JFrame {
     private String[] typesList = {"Functional Test by recording", "Check for broken links and images", "Validate the UI by screenshot", "Check for XSS attack"};
 
     private static WebDriver driver;
-    private static final String DISABLE_XSS_AUDITOR = "--disable-xss-auditor";
+//    private static final String DISABLE_XSS_AUDITOR = "--disable-xss-auditor";
 
     private WebDriver setupDriver() {
         WebDriverManager.chromedriver().setup();
         driver = new ChromeDriver();
+        driver.manage().window().setPosition(new Point(0,0));
+        driver.manage().window().setSize(new Dimension(1295,843));
         return driver;
     }
 
@@ -272,7 +278,7 @@ public class MainPage extends JFrame {
             e.printStackTrace();
         }
         infoFrame.setTitle("Function Test by recording");
-        infoFrame.setBounds(300, 90, 900, 600);
+        infoFrame.setBounds(20, 20, 900, 600);
         infoFrame.setVisible(true);
         Container c = infoFrame.getContentPane();
         c.setLayout(new GridBagLayout());
@@ -341,7 +347,7 @@ public class MainPage extends JFrame {
         driver.get("chrome-extension://mooikfkahbdckldjjndioackbalphokd/index.html");
         driver.findElement(By.linkText("Record a new test in a new project")).click();
         driver.findElement(By.cssSelector("input[name=\"projectName\"]")).sendKeys("Test" + Keys.ENTER);
-//        Thread.sleep(5000);
+        Thread.sleep(5000);
         driver.findElement(By.cssSelector("input[name=\"baseUrl\"]")).sendKeys(url + Keys.ENTER);
     }
 
@@ -368,7 +374,7 @@ public class MainPage extends JFrame {
             e.printStackTrace();
         }
         infoFrame.setTitle("UI test by screenshot");
-        infoFrame.setBounds(300, 90, 900, 600);
+        infoFrame.setBounds(20, 20, 900, 600);
         infoFrame.setVisible(true);
         Container c = infoFrame.getContentPane();
         c.setLayout(new GridBagLayout());
@@ -435,7 +441,7 @@ public class MainPage extends JFrame {
             e.printStackTrace();
         }
         infoFrame.setTitle("UI test results");
-        infoFrame.setBounds(300, 90, 900, 600);
+        infoFrame.setBounds(20, 20, 900, 600);
         infoFrame.setVisible(true);
         Container c = infoFrame.getContentPane();
         c.setLayout(new GridBagLayout());
@@ -469,7 +475,7 @@ public class MainPage extends JFrame {
                 .map(e -> e.getAttribute("href"))
                 .collect(Collectors.toList()));
         double diffSum = 0;
-        System.out.println(list);
+//        System.out.println(list);
         for (String nestedUrl : list) {
             if (nestedUrl == null || nestedUrl.isEmpty()) {
                 System.out.println("URL is either not configured for anchor tag or it is empty");
@@ -478,6 +484,7 @@ public class MainPage extends JFrame {
             driver.get(nestedUrl);
             String urlWithoutSymbols = nestedUrl.replaceAll("://", "");
             urlWithoutSymbols = urlWithoutSymbols.replaceAll("/", "");
+            urlWithoutSymbols = urlWithoutSymbols.replaceAll("\\?", "");
             System.out.println(urlWithoutSymbols);
             takeScreenshot(urlWithoutSymbols + "_result.png");
             double diff = compareImages(urlWithoutSymbols + "_result.png", urlWithoutSymbols + "_golden.png", diffInPercent);
@@ -568,8 +575,9 @@ public class MainPage extends JFrame {
     public void checkForXSSAttack(String url) {
 
         WebDriverManager.chromedriver().setup();
-        driver = new ChromeDriver(getChromeCapabilities());
-        driver.get(url);
+        driver = setupDriver();
+//        driver = new ChromeDriver(getChromeCapabilities());
+        driver.get("https://xss-game.appspot.com/level1/frame");
         List<WebElement> forms = driver.findElements(By.xpath("//form"))
                 .stream()
                 .parallel()
@@ -582,7 +590,7 @@ public class MainPage extends JFrame {
                     .filter(element -> element.getAttribute("type").matches("text|password|email|number|url|search|tel"))
                     .collect(Collectors.toList());
             inputs.addAll(new ArrayList<>(e.findElements(By.xpath("//textarea"))));
-//            System.out.println(inputs);
+
             String XSS_CONTENT = "<script>alert('1');</script>";
             for (WebElement input : inputs) {
                 input.sendKeys(XSS_CONTENT);
@@ -595,25 +603,59 @@ public class MainPage extends JFrame {
 //        System.out.println(forms);
     }
 
+    @Test
+    final ArrayList<String> getInputs() {
+        final String path = "src/main/resources/Test1Test.java";
+        final File file = new File(path);
 
-    private DesiredCapabilities getChromeCapabilities() {
-        DesiredCapabilities capabilities = DesiredCapabilities.chrome();
-        capabilities.setCapability(ChromeOptions.CAPABILITY, getChromeOptions());
-        return capabilities;
+        try {
+            Scanner scanner = new Scanner(file);
+
+            //now read the file line by line...
+            int lineNum = 0;
+            ArrayList<String> datas = new ArrayList<>();
+            while (scanner.hasNextLine()) {
+                String line = scanner.nextLine();
+                lineNum++;
+
+                if(line.contains("sendKeys")) {
+
+                    Pattern p = Pattern.compile("\"([^\"]*)\"");
+                    Matcher m = p.matcher(line);
+
+                    while (m.find()) {
+                        datas.add(m.group(1));
+                    }
+                }
+            }
+            return datas;
+
+        } catch(FileNotFoundException e) {
+            System.out.println("yallla");
+            return null;
+        }
     }
 
-    private ChromeOptions getChromeOptions() {
-        ChromeOptions options = new ChromeOptions();
-        options.addArguments(getChromeSwitches());
-        return options;
-    }
 
-    private List<String> getChromeSwitches() {
-        List<String> chromeSwitches = new ArrayList<>();
-        chromeSwitches.add(DISABLE_XSS_AUDITOR);
-        return chromeSwitches;
-    }
-
+//
+//    private DesiredCapabilities getChromeCapabilities() {
+//        DesiredCapabilities capabilities = DesiredCapabilities.chrome();
+//        capabilities.setCapability(ChromeOptions.CAPABILITY, getChromeOptions());
+//        return capabilities;
+//    }
+//
+//    private ChromeOptions getChromeOptions() {
+//        ChromeOptions options = new ChromeOptions();
+//        options.addArguments(getChromeSwitches());
+//        return options;
+//    }
+//
+//    private List<String> getChromeSwitches() {
+//        List<String> chromeSwitches = new ArrayList<>();
+//        chromeSwitches.add(DISABLE_XSS_AUDITOR);
+//        return chromeSwitches;
+//    }
+//
     public boolean isAlertDisplayed(WebDriver driver) {
         boolean foundAlert;
         WebDriverWait wait = new WebDriverWait(driver, 5);
@@ -637,7 +679,7 @@ public class MainPage extends JFrame {
         }
 
         infoFrame.setTitle("XSS attack test results");
-        infoFrame.setBounds(300, 90, 900, 600);
+        infoFrame.setBounds(20, 20, 900, 600);
         infoFrame.setVisible(true);
         Container c = infoFrame.getContentPane();
         c.setLayout(new GridBagLayout());
@@ -648,7 +690,7 @@ public class MainPage extends JFrame {
             info.setText("Your provided web page is protected from XSS attack!!!");
             info.setForeground(new Color(8,96,17));
         } else {
-            info.setText("Oops! Your web page has some security issues. There is detected an alert during th XSS attack test");
+            info.setText("<html>Oops! Your web page has some security issues. <br>There was detected an alert during the XSS attack test");
             info.setForeground(new Color(160, 36, 37, 208));
         }
         info.setFont(new Font("SansSerif", Font.BOLD, 28));
