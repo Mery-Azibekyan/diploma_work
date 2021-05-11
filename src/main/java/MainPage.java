@@ -2,12 +2,14 @@
 import io.github.bonigarcia.wdm.WebDriverManager;
 import keeptoo.KButton;
 import keeptoo.KGradientPanel;
+import org.apache.commons.compress.archivers.zip.ScatterZipOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
-import org.testng.annotations.Test;
-
+import org.openqa.selenium.remote.DesiredCapabilities;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -16,12 +18,14 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.*;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.List;
+import java.util.stream.Collectors;
+
+import static java.sql.DriverManager.getDriver;
 
 public class MainPage extends JFrame {
 
@@ -34,9 +38,16 @@ public class MainPage extends JFrame {
     private JLabel res;
     private JComboBox testTypes;
     private JLabel projectName;
-    private String[] typesList = {"Check for broken links", "Functional Test by recording", "Validate the UI", "Check for XSS attack"};
+    private String[] typesList = {"Functional Test by recording", "Check for broken links and images", "Validate the UI by screenshot", "Check for XSS attack"};
 
     private static WebDriver driver;
+    private static final String DISABLE_XSS_AUDITOR = "--disable-xss-auditor";
+
+    private WebDriver setupDriver() {
+        WebDriverManager.chromedriver().setup();
+        driver = new ChromeDriver();
+        return driver;
+    }
 
     public MainPage() {
         setTitle("Testing Project");
@@ -167,13 +178,16 @@ public class MainPage extends JFrame {
                         String type = testTypes.getSelectedItem().toString();
                         switch (type) {
                             case "Check for broken links":
-                                checkForBrokenLinks(url);
+                                checkForBrokenLinksAndImages(url);
                                 break;
                             case "Functional Test by recording":
                                 openNewFrameForRecording(url);
                                 break;
                             case "Validate the UI":
                                 openNewFrameForScreenshot(url);
+                                break;
+                            case "Check for XSS attack":
+                                checkForXSSAttack(url);
                                 break;
                         }
                     } else {
@@ -196,77 +210,64 @@ public class MainPage extends JFrame {
     }
 
     @lombok.SneakyThrows
-    public void checkForBrokenLinks(String url) {
+    public void checkForBrokenLinksAndImages(String url) {
         String homePage = url;
-        String nestedUrl = "";
-        HttpURLConnection huc = null;
-        int respCode = 200;
-
-        Map<String, String> results = new HashMap<>();
-
-
-        WebDriverManager.chromedriver().setup();
-        driver = new ChromeDriver();
+        driver = setupDriver();
         driver.get(homePage);
 
-        List<WebElement> links = driver.findElements(By.tagName("a"));
-        Iterator<WebElement> it = links.iterator();
+        List<String> listOfBrokenLinks = driver.findElements(By.xpath("//*[@href]"))
+                .stream()
+                .parallel()
+                .map(e -> e.getAttribute("href"))
+                .filter(href -> LinkUtil.getResponseCode(href) != 200)
+                .collect(Collectors.toList());
 
+
+        List<String> listOfBrokenImages = driver.findElements(By.xpath("//*[@src]"))
+                .stream()
+                .parallel()
+                .map(e -> e.getAttribute("src"))
+                .filter(href -> LinkUtil.getResponseCode(href) != 200)
+                .collect(Collectors.toList());
+        driver.quit();
+        final int brokenLinksCount = listOfBrokenLinks.size();
+        final int brokenImagesCount = listOfBrokenImages.size();
         JFrame resultFrame = new JFrame();
         resultFrame.setTitle("Results");
         resultFrame.setBounds(10, 10, 900, 600);
         resultFrame.setVisible(true);
         Container c = resultFrame.getContentPane();
-        while (it.hasNext()) {
 
-            nestedUrl = it.next().getAttribute("href");
-            if (nestedUrl == null || nestedUrl.isEmpty()) {
-                System.out.println("URL is either not configured for anchor tag or it is empty");
-                results.put(nestedUrl, "Not Configured");
-                continue;
-            }
-            try {
-                huc = (HttpURLConnection) (new URL(nestedUrl).openConnection());
-                huc.setRequestMethod("HEAD");
-                huc.connect();
-                respCode = huc.getResponseCode();
-                if (respCode >= 400) {
-                    System.out.println(nestedUrl + " is a broken link");
-                    results.put(nestedUrl, "Broken link");
-                } else {
-                    System.out.println(nestedUrl + " is a valid link");
-                    results.put(nestedUrl, "Valid link");
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        driver.quit();
+        String[] data1 = listOfBrokenLinks.toArray(new String[0]);
+        final DefaultTableModel model1 = new DefaultTableModel();
+        model1.addColumn(brokenLinksCount + " URLs are broken in your website", data1);
+        JTable jt1 = new JTable(model1);
+        jt1.setRowHeight(30);
+        GridLayout grid = new GridLayout(0, 1, 30, 20);
+        JPanel jPanelTable = new JPanel(grid);
+        jPanelTable.add(jt1.getTableHeader(), BorderLayout.NORTH);
+        jPanelTable.add(jt1, BorderLayout.CENTER);
 
-        String[][] data = new String[results.size()][];
-        int ii = 0;
-        for (Map.Entry<String, String> entry : results.entrySet()) {
-            data[ii++] = new String[]{entry.getKey(), entry.getValue()};
-        }
-
-        String column[] = {"URL", "Status"};
-        final DefaultTableModel model = new DefaultTableModel(data, column);
-        JTable jt = new JTable(model);
-        jt.setRowHeight(30);
-        jt.setBounds(30, 40, 1000, 800);
-        JScrollPane sp = new JScrollPane(jt);
+        String[] data2 = listOfBrokenImages.toArray(new String[0]);
+        final DefaultTableModel model2 = new DefaultTableModel();
+        model2.addColumn(brokenImagesCount + " images are broken in your website", data2);
+        JTable jt2 = new JTable(model2);
+        jt2.setRowHeight(30);
+        jPanelTable.add(jt2.getTableHeader(), BorderLayout.NORTH);
+        jPanelTable.add(jt2, BorderLayout.CENTER);
+        JScrollPane sp = new JScrollPane(jPanelTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        sp.setBounds(10, 200, 1000, 800);
         resultFrame.add(sp);
-        resultFrame.setSize(300, 400);
         resultFrame.setVisible(true);
     }
 
 
     public void openNewFrameForRecording(String url) {
-        JFrame infoFrame = new JFrame();
-        infoFrame.setTitle("Function Test by recording");
-        infoFrame.setBounds(300, 90, 900, 600);
-        infoFrame.setVisible(true);
-        Container c = infoFrame.getContentPane();
+            JFrame infoFrame = new JFrame();
+            infoFrame.setTitle("Function Test by recording");
+            infoFrame.setBounds(300, 90, 900, 600);
+            infoFrame.setVisible(true);
+            Container c = infoFrame.getContentPane();
         c.setLayout(new GridBagLayout());
         GridBagConstraints cons = new GridBagConstraints();
         JLabel URL = new JLabel("<html><b>URL:<b> " + url);
@@ -404,7 +405,10 @@ public class MainPage extends JFrame {
         cons.fill = GridBagConstraints.HORIZONTAL;
         c.add(start, cons);
 
-        start.addActionListener(e -> {infoFrame.dispose(); makeScreenshots(url, ((Number)percentField.getValue()).doubleValue());});
+        start.addActionListener(e -> {
+            infoFrame.dispose();
+            makeScreenshots(url, ((Number) percentField.getValue()).doubleValue());
+        });
     }
 
     public void openNewFrameForResults(Double diff) {
@@ -417,52 +421,53 @@ public class MainPage extends JFrame {
         GridBagConstraints cons = new GridBagConstraints();
         JLabel info = new JLabel();
 
-        if(diff == 0){
+        if (diff == 0) {
             info.setText("Your website UI is okay. There is no difference between screenshots.");
             c.add(info, cons);
         } else {
-        info = new JLabel("<html>There are some issues in your website UI.<br>" +
-                "The difference between screenshots are: ");
-        JLabel result = new JLabel(diff.toString());
-        info.setFont(new Font("SansSerif", Font.BOLD, 24));
-        cons.gridy = 0;
-        c.add(info, cons);
-        cons.gridy = 1;
-        c.add(result, cons);
+            info = new JLabel("<html>There are some issues in your website UI.<br>" +
+                    "The difference between screenshots are: ");
+            JLabel result = new JLabel(diff.toString());
+            info.setFont(new Font("SansSerif", Font.BOLD, 36));
+            cons.gridy = 0;
+            c.add(info, cons);
+            cons.gridy = 1;
+            c.add(result, cons);
         }
-
-
     }
 
-
-
-    @Test
     public void makeScreenshots(String url, Double diffInPercent) {
 
-//        List<WebElement> links = driver.findElements(By.tagName("a"));
-//        Iterator<WebElement> it = links.iterator();
-//        String nestedUrl = null;
-        WebDriverManager.chromedriver().setup();
-        driver = new ChromeDriver();
+        driver = setupDriver();
         driver.get(url);
-        final String urlWithoutSymbols = url.replaceAll("://", "");
-        System.out.println(urlWithoutSymbols);
-        takeScreenshot(urlWithoutSymbols + "_result.png");
-        double diff = compareImages(urlWithoutSymbols + "_result.png", urlWithoutSymbols + "_golden.png", diffInPercent);
-//        while(it.hasNext()){
-//
-//            nestedUrl = it.next().getAttribute("href");
-//            if(nestedUrl == null || nestedUrl.isEmpty()){
-//                System.out.println("URL is either not configured for anchor tag or it is empty");
-//            }
-//
-//        }
-        if(diff <= diffInPercent){
-            diff = 0;
-            removeFile(urlWithoutSymbols + "_result.png");
+        List<String> list = new ArrayList<>();
+        list.add(url);
+        list.addAll(driver.findElements(By.xpath("//*[@href]"))
+                .stream()
+                .parallel()
+                .map(e -> e.getAttribute("href"))
+                .collect(Collectors.toList()));
+        double diffSum = 0;
+        System.out.println(list);
+        for (String nestedUrl : list) {
+            if (nestedUrl == null || nestedUrl.isEmpty()) {
+                System.out.println("URL is either not configured for anchor tag or it is empty");
+                continue;
+            }
+            driver.get(nestedUrl);
+            String urlWithoutSymbols = nestedUrl.replaceAll("://", "");
+            urlWithoutSymbols = urlWithoutSymbols.replaceAll("/", "");
+            System.out.println(urlWithoutSymbols);
+            takeScreenshot(urlWithoutSymbols + "_result.png");
+            double diff = compareImages(urlWithoutSymbols + "_result.png", urlWithoutSymbols + "_golden.png", diffInPercent);
+            if (diff <= diffInPercent) {
+                diff = 0;
+                removeFile(urlWithoutSymbols + "_result.png");
+            }
+            diffSum += diff;
         }
         driver.quit();
-        openNewFrameForResults(diff);
+        openNewFrameForResults(diffSum);
 
     }
 
@@ -524,24 +529,104 @@ public class MainPage extends JFrame {
     public double compareImages(String resultPath, String goldenPath, double diffInPercent) {
         BufferedImage golden, result;
         double diff = 0;
+        File goldenFile;
         try {
             result = ImageIO.read(new File(resultPath));
-            final File goldenFile = new File(goldenPath);
+            goldenFile = new File(goldenPath);
             if (!goldenFile.exists()) {
                 FileUtils.copyFile(new File(resultPath), goldenFile);
             }
             golden = ImageIO.read(goldenFile);
             diff = getImgCmpDiffPercent(golden, result);
-
-//            assertThat(diff).as("Difference between baseline and checkpoint").isEqualTo(diffInPercent);
-//            removeFile(resultPath);
-
-
         } catch (IOException e) {
             e.printStackTrace();
         }
         return diff;
     }
 
+    public void checkForXSSAttack(String url) {
+
+        WebDriverManager.chromedriver().setup();
+        driver = new ChromeDriver(getChromeCapabilities());
+        driver.get(url);
+        List<WebElement> forms = driver.findElements(By.xpath("//form"))
+                .stream()
+                .parallel()
+                .collect(Collectors.toList());
+
+        for (WebElement e : forms) {
+            List<WebElement> inputs = e.findElements(By.xpath("//input"))
+                    .stream()
+                    .parallel()
+                    .filter(element -> element.getAttribute("type").matches("text|password|email|number|url|search|tel"))
+                    .collect(Collectors.toList());
+            inputs.addAll(new ArrayList<>(e.findElements(By.xpath("//textarea"))));
+//            System.out.println(inputs);
+            String XSS_CONTENT = "<script>alert('1');</script>";
+            for (WebElement input : inputs) {
+                input.sendKeys(XSS_CONTENT);
+            }
+            e.submit();
+            boolean alert = isAlertDisplayed(driver);
+            driver.quit();
+            openNewFrameForXSSResult(alert);
+        }
+//        System.out.println(forms);
+    }
+
+
+    private DesiredCapabilities getChromeCapabilities() {
+        DesiredCapabilities capabilities = DesiredCapabilities.chrome();
+        capabilities.setCapability(ChromeOptions.CAPABILITY, getChromeOptions());
+        return capabilities;
+    }
+
+    private ChromeOptions getChromeOptions() {
+        ChromeOptions options = new ChromeOptions();
+        options.addArguments(getChromeSwitches());
+        return options;
+    }
+
+    private List<String> getChromeSwitches() {
+        List<String> chromeSwitches = new ArrayList<>();
+        chromeSwitches.add(DISABLE_XSS_AUDITOR);
+        return chromeSwitches;
+    }
+
+    public boolean isAlertDisplayed(WebDriver driver) {
+        boolean foundAlert;
+        WebDriverWait wait = new WebDriverWait(driver, 10);
+        try {
+            wait.until(ExpectedConditions.alertIsPresent());
+            foundAlert = true;
+        } catch (TimeoutException e) {
+            foundAlert = false;
+        }
+        return foundAlert;
+    }
+
+    public void openNewFrameForXSSResult(boolean foundAlert){
+        JFrame infoFrame = new JFrame();
+        infoFrame.setTitle("XSS attack test results");
+        infoFrame.setBounds(300, 90, 900, 600);
+        infoFrame.setVisible(true);
+        Container c = infoFrame.getContentPane();
+        c.setLayout(new GridBagLayout());
+        GridBagConstraints cons = new GridBagConstraints();
+        JLabel info = new JLabel();
+
+        if (foundAlert == false) {
+            info.setText("Your provided web page is protected from XSS attack!!!");
+            info.setForeground(new Color(8,96,17));
+        } else {
+            info.setText("Oops! Your web page has some security issues. There is detected an alert during th XSS attack test");
+            info.setForeground(new Color(160, 36, 37, 208));
+        }
+        info.setFont(new Font("SansSerif", Font.BOLD, 28));
+        c.add(info, cons);
+    }
 }
+
+
+
 
