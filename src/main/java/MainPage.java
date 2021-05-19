@@ -1,13 +1,20 @@
 
+import autoitx4java.AutoItX;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import keeptoo.KButton;
 import keeptoo.KGradientPanel;
 import org.apache.commons.io.FileUtils;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.openqa.selenium.*;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.Point;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+
+
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.annotations.Test;
@@ -19,17 +26,19 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URL;
 import java.nio.file.*;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static java.sql.DriverManager.getDriver;
+import static io.restassured.path.json.JsonPath.from;
+import static org.hamcrest.Matchers.equalTo;
 
 public class MainPage extends JFrame {
 
@@ -50,8 +59,8 @@ public class MainPage extends JFrame {
     private WebDriver setupDriver() {
         WebDriverManager.chromedriver().setup();
         driver = new ChromeDriver();
-        driver.manage().window().setPosition(new Point(0,0));
-        driver.manage().window().setSize(new Dimension(1295,843));
+        driver.manage().window().setPosition(new Point(0, 0));
+        driver.manage().window().setSize(new Dimension(1295, 843));
         return driver;
     }
 
@@ -72,17 +81,17 @@ public class MainPage extends JFrame {
         kPanel.kStartColor = startColor;
         kPanel.kEndColor = endColor;
         kPanel.kGradientFocus = 200;
-
-        projectName = new JLabel("ProjectName");
-        projectName.setForeground(new Color(204, 204, 204));
-        projectName.setFont(new Font("DialogInput", Font.PLAIN, 14));
-        c.gridy = 0;
-        c.gridx = 0;
-        c.anchor = GridBagConstraints.FIRST_LINE_START;
-        c.weighty = 1.0;
-        c.insets = new Insets(30, 30, 20, 0);
-
-        kPanel.add(projectName, c);
+//
+//        projectName = new JLabel("ProjectName");
+//        projectName.setForeground(new Color(204, 204, 204));
+//        projectName.setFont(new Font("DialogInput", Font.PLAIN, 14));
+//        c.gridy = 0;
+//        c.gridx = 0;
+//        c.anchor = GridBagConstraints.FIRST_LINE_START;
+//        c.weighty = 1.0;
+//        c.insets = new Insets(30, 30, 20, 0);
+//
+//        kPanel.add(projectName, c);
 
         title = new JLabel("Please fill in testing information");
         c.gridy = 1;
@@ -217,6 +226,7 @@ public class MainPage extends JFrame {
 
     @lombok.SneakyThrows
     public void checkForBrokenLinksAndImages(String url) {
+        //https://the-internet.herokuapp.com/broken_images
         String homePage = url;
         driver = setupDriver();
         driver.get(homePage);
@@ -251,6 +261,9 @@ public class MainPage extends JFrame {
         jt1.setRowHeight(30);
         GridLayout grid = new GridLayout(0, 1, 30, 20);
         JPanel jPanelTable = new JPanel(grid);
+        jt1.setFont(new Font("SansSerif", Font.PLAIN, 20));
+        jt1.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 20));
+        jt1.getTableHeader().setForeground(new Color(103, 13, 14));
         jPanelTable.add(jt1.getTableHeader(), BorderLayout.NORTH);
         jPanelTable.add(jt1, BorderLayout.CENTER);
 
@@ -259,6 +272,9 @@ public class MainPage extends JFrame {
         model2.addColumn(brokenImagesCount + " images are broken in your website", data2);
         JTable jt2 = new JTable(model2);
         jt2.setRowHeight(30);
+        jt2.setFont(new Font("SansSerif", Font.PLAIN, 20));
+        jt2.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 20));
+        jt2.getTableHeader().setForeground(new Color(103, 13, 14));
         jPanelTable.add(jt2.getTableHeader(), BorderLayout.NORTH);
         jPanelTable.add(jt2, BorderLayout.CENTER);
         JScrollPane sp = new JScrollPane(jPanelTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
@@ -274,7 +290,7 @@ public class MainPage extends JFrame {
         try {
             backImage = ImageIO.read(new File("img1.png"));
             infoFrame.setContentPane(new ImagePanel(backImage));
-        }catch (IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
         infoFrame.setTitle("Function Test by recording");
@@ -347,16 +363,35 @@ public class MainPage extends JFrame {
         driver.get("chrome-extension://mooikfkahbdckldjjndioackbalphokd/index.html");
         driver.findElement(By.linkText("Record a new test in a new project")).click();
         driver.findElement(By.cssSelector("input[name=\"projectName\"]")).sendKeys("Test" + Keys.ENTER);
-        Thread.sleep(5000);
+        Thread.sleep(2000);
         driver.findElement(By.cssSelector("input[name=\"baseUrl\"]")).sendKeys(url + Keys.ENTER);
     }
 
 
-    public static void stopAndSaveRecording() {
+    @lombok.SneakyThrows
+    public void stopAndSaveRecording() {
 
         driver.findElement(By.cssSelector("button.btn-action.active.si-record")).click();
+        Thread.sleep(3000);
         driver.findElement(By.cssSelector("input[name=\"test caseName\"]")).sendKeys("Test1" + Keys.ENTER);
+        Thread.sleep(3000);
+        WebDriverWait wait = new WebDriverWait(driver, 10);
+
+        driver.findElement(By.xpath("//*[@id=\"root\"]/div/div/div[1]/div[1]/div/div[2]/span/button[2]")).click();
+//        wait.until(
+//                ExpectedConditions.elementToBeClickable(By.cssSelector(cssSelec)));
+//        wait.until(
+//                ExpectedConditions.visibilityOfElementLocated(By.cssSelector(cssSelec)));
+//        wait.until(
+//                ExpectedConditions.presenceOfElementLocated(By.cssSelector(cssSelec)));
+//        driver.findElement(By.cssSelector(cssSelec)).click();
+
+
         driver.quit();
+//        AutoItX autoItX = new AutoItX();
+//        autoItX.controlGetFocus("Save As");
+//        autoItX.send("{ENTER}");
+        openNewFrameForInputs();
     }
 
     public static void playbackRecording() {
@@ -370,7 +405,7 @@ public class MainPage extends JFrame {
         try {
             backImage = ImageIO.read(new File("img1.png"));
             infoFrame.setContentPane(new ImagePanel(backImage));
-        }catch (IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
         infoFrame.setTitle("UI test by screenshot");
@@ -437,7 +472,7 @@ public class MainPage extends JFrame {
         try {
             backImage = ImageIO.read(new File("img1.png"));
             infoFrame.setContentPane(new ImagePanel(backImage));
-        }catch (IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
         infoFrame.setTitle("UI test results");
@@ -454,13 +489,15 @@ public class MainPage extends JFrame {
         } else {
             info = new JLabel("<html>There are some issues in your website UI.<br>" +
                     "The difference between screenshots are: ");
-            JLabel result = new JLabel(diff.toString());
-            info.setFont(new Font("SansSerif", Font.BOLD, 36));
-            cons.gridy = 0;
-            c.add(info, cons);
-            cons.gridy = 1;
-            c.add(result, cons);
         }
+        JLabel result = new JLabel(diff.toString() + "%");
+        info.setFont(new Font("SansSerif", Font.BOLD, 20));
+        result.setFont(new Font("SansSerif", Font.BOLD, 36));
+        cons.gridy = 0;
+        c.add(info, cons);
+        cons.gridy = 1;
+        c.add(result, cons);
+
     }
 
     public void makeScreenshots(String url, Double diffInPercent) {
@@ -482,12 +519,12 @@ public class MainPage extends JFrame {
                 continue;
             }
             driver.get(nestedUrl);
-            String urlWithoutSymbols = nestedUrl.replaceAll("://", "");
-            urlWithoutSymbols = urlWithoutSymbols.replaceAll("/", "");
-            urlWithoutSymbols = urlWithoutSymbols.replaceAll("\\?", "");
+            String urlWithoutSymbols = nestedUrl.replaceAll("[:/?|*<>\"]", "");
+//            urlWithoutSymbols = urlWithoutSymbols.replaceAll("/", "");
+//            urlWithoutSymbols = urlWithoutSymbols.replaceAll("\\?", "");
             System.out.println(urlWithoutSymbols);
             takeScreenshot(urlWithoutSymbols + "_result.png");
-            double diff = compareImages(urlWithoutSymbols + "_result.png", urlWithoutSymbols + "_golden.png", diffInPercent);
+            double diff = compareImages(urlWithoutSymbols + "_result.png", urlWithoutSymbols + "_golden.png");
             if (diff <= diffInPercent) {
                 diff = 0;
                 removeFile(urlWithoutSymbols + "_result.png");
@@ -495,7 +532,7 @@ public class MainPage extends JFrame {
             diffSum += diff;
         }
         driver.quit();
-        openNewFrameForResults(diffSum);
+        openNewFrameForResults(round(diffSum, 2));
 
     }
 
@@ -554,7 +591,7 @@ public class MainPage extends JFrame {
         return Math.abs(goldenRed - resultRed) + Math.abs(goldenGreen - resultGreen) + Math.abs(goldenBlue - resultBlue);
     }
 
-    public double compareImages(String resultPath, String goldenPath, double diffInPercent) {
+    public double compareImages(String resultPath, String goldenPath) {
         BufferedImage golden, result;
         double diff = 0;
         File goldenFile;
@@ -603,41 +640,7 @@ public class MainPage extends JFrame {
 //        System.out.println(forms);
     }
 
-    @Test
-    final ArrayList<String> getInputs() {
-        final String path = "src/main/resources/Test1Test.java";
-        final File file = new File(path);
-
-        try {
-            Scanner scanner = new Scanner(file);
-
-            //now read the file line by line...
-            int lineNum = 0;
-            ArrayList<String> datas = new ArrayList<>();
-            while (scanner.hasNextLine()) {
-                String line = scanner.nextLine();
-                lineNum++;
-
-                if(line.contains("sendKeys")) {
-
-                    Pattern p = Pattern.compile("\"([^\"]*)\"");
-                    Matcher m = p.matcher(line);
-
-                    while (m.find()) {
-                        datas.add(m.group(1));
-                    }
-                }
-            }
-            return datas;
-
-        } catch(FileNotFoundException e) {
-            System.out.println("yallla");
-            return null;
-        }
-    }
-
-
-//
+    //
 //    private DesiredCapabilities getChromeCapabilities() {
 //        DesiredCapabilities capabilities = DesiredCapabilities.chrome();
 //        capabilities.setCapability(ChromeOptions.CAPABILITY, getChromeOptions());
@@ -668,13 +671,13 @@ public class MainPage extends JFrame {
         return foundAlert;
     }
 
-    public void openNewFrameForXSSResult(boolean foundAlert){
+    public void openNewFrameForXSSResult(boolean foundAlert) {
         JFrame infoFrame = new JFrame();
         BufferedImage backImage;
         try {
             backImage = ImageIO.read(new File("img1.png"));
             infoFrame.setContentPane(new ImagePanel(backImage));
-        }catch (IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
 
@@ -688,7 +691,7 @@ public class MainPage extends JFrame {
 
         if (foundAlert == false) {
             info.setText("Your provided web page is protected from XSS attack!!!");
-            info.setForeground(new Color(8,96,17));
+            info.setForeground(new Color(8, 96, 17));
         } else {
             info.setText("<html>Oops! Your web page has some security issues. <br>There was detected an alert during the XSS attack test");
             info.setForeground(new Color(160, 36, 37, 208));
@@ -696,6 +699,178 @@ public class MainPage extends JFrame {
         info.setFont(new Font("SansSerif", Font.BOLD, 28));
         c.add(info, cons);
     }
+
+    @Test
+    final Map<String, String> getInputs() {
+
+        final String path = "src/main/resources/Test1.side";
+        final String file = generateStringFromResource(path);
+        List<String> values = from(file).getList("tests[0].commands.findAll{it.command == 'type'}.value");
+        List<ArrayList> keysList = from(file).getList("tests[0].commands.findAll{it.command == 'type'}.targets");
+        ArrayList<String> keys = new ArrayList<>();
+        for (ArrayList key : keysList) {
+            List<ArrayList> temp = (List<ArrayList>) key.get(1);
+            System.out.println(temp.get(0));
+            keys.add(String.valueOf(temp.get(0)));
+        }
+
+        Map<String, String> dataMap = new HashMap<String, String>();
+        for (int i = 0; i < values.size(); i++) {
+            dataMap.put(keys.get(i).toString(), values.get(i).toString());
+        }
+        System.out.println(dataMap);
+
+        return dataMap;
+    }
+
+
+    @Test
+    public void openNewFrameForInputs() {
+        Map<String, String> data = getInputs();
+        JFrame infoFrame = new JFrame();
+        kPanel = new KGradientPanel();
+        kPanel.setLayout(new GridBagLayout());
+        kPanel.setSize(800, 600);
+        GridBagConstraints cons = new GridBagConstraints();
+        infoFrame.setContentPane(kPanel);
+        Color startColor = new Color(10, 150, 151, 202);
+        Color endColor = new Color(175, 193, 204);
+        kPanel.kStartColor = startColor;
+        kPanel.kEndColor = endColor;
+        kPanel.kGradientFocus = 200;
+        infoFrame.setTitle("User inputs");
+        infoFrame.setBounds(20, 20, 1200, 600);
+        infoFrame.setVisible(true);
+        Container c = infoFrame.getContentPane();
+        c.setLayout(new GridBagLayout());
+        JLabel info = new JLabel("<html>There is your input actions. Please provide the valid values for the following fields." +
+                "<br>The system will generate new tests with your provided values.<br>" +
+                "<br><b> NOTE: The values should be separated by comma </b>");
+        cons.gridy = 0;
+        cons.gridx = 0;
+        cons.gridwidth = 2;
+        c.add(info, cons);
+        int y = 1;
+        List<JTextField> list = new ArrayList<JTextField>();
+        for (Map.Entry<String, String> entry : data.entrySet()) {
+            JLabel key = new JLabel(entry.getKey());
+            cons.gridy = y++;
+            cons.gridx = 0;
+            cons.gridwidth = 1;
+            cons.fill = GridBagConstraints.HORIZONTAL;
+            cons.insets = new Insets(10, 0, 20, 5);
+            kPanel.add(key, cons);
+            JTextField value = new JTextField(entry.getValue());
+            cons.gridx = 1;
+            cons.fill = GridBagConstraints.HORIZONTAL;
+            cons.insets = new Insets(10, 10, 20, 5);
+            value.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, Color.WHITE));
+            value.setOpaque(false);
+            value.setFont(new Font("Arial", Font.PLAIN, 14));
+            value.setForeground(Color.WHITE);
+            value.setSize(300, 20);
+            kPanel.add(value, cons);
+            list.add(value);
+        }
+        KButton test = new KButton();
+        test.setText("Generate Tests");
+        test.kAllowGradient = false;
+        test.kBackGroundColor = new Color(29, 92, 92, 178);
+        test.kBorderRadius = 40;
+        test.setFont(new Font("Arial", Font.PLAIN, 18));
+        test.kHoverColor = new Color(17, 62, 62, 178);
+        test.kPressedColor = new Color(29, 92, 92, 178);
+        test.kHoverForeGround = Color.WHITE;
+        test.setBorder(null);
+        cons.gridy = y;
+        cons.gridx = 0;
+        cons.gridwidth = 2;
+        cons.fill = GridBagConstraints.HORIZONTAL;
+        kPanel.add(test, cons);
+        test.addActionListener(e -> {
+            try {
+                generateTests(list, data);
+            } catch (ParseException | IOException ex) {
+                ex.printStackTrace();
+            }
+        });
+    }
+
+    @Test
+    public void generateTests(List<JTextField> list, Map<String, String> data) throws ParseException, IOException {
+        final String path = "src/main/resources/Test1.side";
+        String file = generateStringFromResource(path);
+        JSONParser parser = new JSONParser();
+        JSONObject json = (JSONObject) parser.parse(file);
+
+//        final File file = new File(path);
+//
+//        try {
+//            int i = 0;
+//            for (Map.Entry<String, String> entry : data.entrySet()){
+//                Scanner scanner = new Scanner(file);
+//                int lineNum = 0;
+//                while (scanner.hasNextLine()) {
+//                    String line = scanner.nextLine();
+//                    lineNum++;
+//                    if (line.contains(entry.getKey())) {
+//                        line.replace(entry.getValue(), list.get(i++).getText());
+//                        System.out.println(line);
+//                    }
+//                }
+//                ChromeOptions chromeOptions = new ChromeOptions();
+//                chromeOptions.addExtensions(new File("src/main/resources/extension_3_17_0_0.crx"));
+//                WebDriverManager.chromedriver().setup();
+//                driver = new ChromeDriver(chromeOptions);
+//                driver.get("chrome-extension://mooikfkahbdckldjjndioackbalphokd/index.html");
+//
+//
+//            }
+//            //now read the file line by line...
+//        } catch (FileNotFoundException e) {
+//            e.printStackTrace();
+////        }
+        JSONArray tests = (JSONArray) json.get("tests");
+        JSONObject objectInsideTests = (JSONObject) tests.get(0);
+        JSONArray commands = (JSONArray) objectInsideTests.get("commands");
+//        System.out.println(tests);
+
+        for (Map.Entry<String, String> entry : data.entrySet()) {
+            for (int i = 0; i < commands.size(); i++) {
+                JSONObject object = (JSONObject) commands.get(i);
+                JSONArray targets = (JSONArray) object.get("targets");
+                if (targets.size() > 0) {
+                    JSONArray targetOfName = (JSONArray) targets.get(1);
+                    String target = targetOfName.get(0).toString();
+                    if ( target == entry.getKey()) {
+                        object.put("value", entry.getValue());
+                        break;
+                    }
+                }
+                System.out.println(object);
+            }
+//            System.out.println(json);
+        }
+
+    }
+
+    public static double round(double value, int places) {
+        if (places < 0) throw new IllegalArgumentException();
+
+        BigDecimal bd = BigDecimal.valueOf(value);
+        bd = bd.setScale(places, RoundingMode.HALF_UP);
+        return bd.doubleValue();
+    }
+
+    public static String generateStringFromResource(final String path) {
+        try {
+            return new String(Files.readAllBytes(Paths.get(path)));
+        } catch (IOException e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
+
 }
 
 

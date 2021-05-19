@@ -39,17 +39,26 @@ public class Test1Test {
   @Test
   public void test1() {
     driver.get("https://www.facebook.com/");
-    driver.manage().window().setSize(new Dimension(1050, 662));
-    driver.findElement(By.id("email")).click();
-    driver.findElement(By.id("email")).sendKeys("ffddfd");
-    driver.findElement(By.id("pass")).click();
-    driver.findElement(By.id("pass")).sendKeys("nhjghjg");
-    driver.findElement(By.id("u_0_d_t/")).click();
+    driver.manage().window().setSize(new Dimension(1054, 808));
+    driver.findElement(By.id("u_0_2_7a")).click();
+    driver.findElement(By.id("u_2_b_YV")).sendKeys("Mery");
+    driver.findElement(By.id("u_2_d_4S")).sendKeys("Azibekyan");
+    driver.findElement(By.id("u_2_g_Dl")).sendKeys("mery@asd.ss");
+    driver.findElement(By.id("u_2_j_3X")).click();
+    driver.findElement(By.id("u_2_j_3X")).sendKeys("mery@asd,ass");
+    driver.findElement(By.id("password_step_input")).click();
+    driver.findElement(By.id("password_step_input")).sendKeys("12345");
+    driver.findElement(By.id("month")).click();
     {
-      WebElement element = driver.findElement(By.id("u_0_d_t/"));
-      Actions builder = new Actions(driver);
-      builder.moveToElement(element).perform();
+      WebElement dropdown = driver.findElement(By.id("month"));
+      dropdown.findElement(By.xpath("//option[. = 'дек']")).click();
     }
+    driver.findElement(By.id("month")).click();
+    driver.findElement(By.id("u_2_2_2w")).click();
+    driver.findElement(By.id("u_2_s_v8")).click();
+    driver.findElement(By.id("u_2_j_3X")).click();
+    driver.findElement(By.id("u_2_j_3X")).sendKeys("mery@asd.ss");
+    driver.findElement(By.id("u_2_s_v8")).click();
     driver.close();
   }
 }
