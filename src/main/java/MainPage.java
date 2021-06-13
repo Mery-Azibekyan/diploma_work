@@ -349,7 +349,8 @@ public class MainPage extends JFrame {
         c.add(stop, cons);
 
         start.addActionListener(e -> startRecording(url));
-        stop.addActionListener(e -> stopAndSaveRecording());
+        stop.addActionListener(e -> { infoFrame.dispose();
+        stopAndSaveRecording()});
     }
 
 
@@ -798,42 +799,19 @@ public class MainPage extends JFrame {
 
     @Test
     public void generateTests(List<JTextField> list, Map<String, String> data) throws ParseException, IOException {
+        int i = 0;
+        for (Map.Entry<String, String> entry : data.entrySet()){
+            data.put(entry.getKey(), list.get(i).getText());
+        }
+
         final String path = "src/main/resources/Test1.side";
         String file = generateStringFromResource(path);
         JSONParser parser = new JSONParser();
         JSONObject json = (JSONObject) parser.parse(file);
 
-//        final File file = new File(path);
-//
-//        try {
-//            int i = 0;
-//            for (Map.Entry<String, String> entry : data.entrySet()){
-//                Scanner scanner = new Scanner(file);
-//                int lineNum = 0;
-//                while (scanner.hasNextLine()) {
-//                    String line = scanner.nextLine();
-//                    lineNum++;
-//                    if (line.contains(entry.getKey())) {
-//                        line.replace(entry.getValue(), list.get(i++).getText());
-//                        System.out.println(line);
-//                    }
-//                }
-//                ChromeOptions chromeOptions = new ChromeOptions();
-//                chromeOptions.addExtensions(new File("src/main/resources/extension_3_17_0_0.crx"));
-//                WebDriverManager.chromedriver().setup();
-//                driver = new ChromeDriver(chromeOptions);
-//                driver.get("chrome-extension://mooikfkahbdckldjjndioackbalphokd/index.html");
-//
-//
-//            }
-//            //now read the file line by line...
-//        } catch (FileNotFoundException e) {
-//            e.printStackTrace();
-////        }
         JSONArray tests = (JSONArray) json.get("tests");
         JSONObject objectInsideTests = (JSONObject) tests.get(0);
         JSONArray commands = (JSONArray) objectInsideTests.get("commands");
-//        System.out.println(tests);
 
         for (Map.Entry<String, String> entry : data.entrySet()) {
             for (int i = 0; i < commands.size(); i++) {
@@ -842,9 +820,9 @@ public class MainPage extends JFrame {
                 if (targets.size() > 0) {
                     JSONArray targetOfName = (JSONArray) targets.get(1);
                     String target = targetOfName.get(0).toString();
-                    if ( target == entry.getKey()) {
-                        object.put("value", entry.getValue());
-                        break;
+                    char l = target.charAt(1);
+                    if ( target.equals(entry.getKey())) {
+                        object.put("value",list.get(i).getText());
                     }
                 }
                 System.out.println(object);
